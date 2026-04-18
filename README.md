@@ -1,10 +1,10 @@
 # UI Color Palette MCP Server
 
-A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server built on Cloudflare Workers that exposes the UI Color Palette API as tools for AI agents and LLMs.
+A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server built on Cloudflare Workers using the [Agents SDK](https://developers.cloudflare.com/agents/) (`McpAgent` + Durable Objects) that exposes the UI Color Palette API as tools for AI agents and LLMs.
 
 ## Transport
 
-Streamable HTTP over `POST` using JSON-RPC 2.0 (supports batch requests).
+Streamable HTTP at `/mcp` (supports both SSE and Streamable HTTP transports).
 
 ## Available Tools
 
@@ -49,7 +49,7 @@ Add to your `settings.json` or `.vscode/mcp.json`:
     "servers": {
       "ui-color-palette": {
         "type": "http",
-        "url": "https://mcp-uicp.<your-subdomain>.workers.dev"
+        "url": "https://mcp-uicp.<your-subdomain>.workers.dev/mcp"
       }
     }
   }
@@ -64,8 +64,11 @@ Add to your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "ui-color-palette": {
-      "type": "http",
-      "url": "https://mcp-uicp.<your-subdomain>.workers.dev"
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://mcp-uicp.<your-subdomain>.workers.dev/mcp"
+      ]
     }
   }
 }
