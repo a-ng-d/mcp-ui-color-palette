@@ -33,7 +33,8 @@ interface ToolCallResult {
 const TOOLS: McpTool[] = [
   {
     name: 'get_full_palette',
-    description: 'Generate a complete color palette from base configuration and theme configurations. Returns a PaletteData object with all color scales.',
+    description:
+      'Generate a complete color palette from base configuration and theme configurations. Returns a PaletteData object with all color scales.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -268,7 +269,17 @@ const TOOLS: McpTool[] = [
           description: 'Whether the palette is publicly visible (default: false)',
         },
       },
-      required: ['accessToken', 'name', 'preset', 'shift', 'are_source_colors_locked', 'colors', 'themes', 'color_space', 'algorithm_version'],
+      required: [
+        'accessToken',
+        'name',
+        'preset',
+        'shift',
+        'are_source_colors_locked',
+        'colors',
+        'themes',
+        'color_space',
+        'algorithm_version',
+      ],
     },
   },
   {
@@ -671,10 +682,13 @@ export default {
     }
 
     if (request.method !== 'POST') {
-      return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32700, message: 'Only POST requests are accepted' }, id: null }), {
-        status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ jsonrpc: '2.0', error: { code: -32700, message: 'Only POST requests are accepted' }, id: null }),
+        {
+          status: 405,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      )
     }
 
     let body: unknown
