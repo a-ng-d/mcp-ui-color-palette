@@ -16,4 +16,4 @@ new_sqlite_classes = ["UICPMcp"]
 [vars]
 # Set this to the deployed URL of api-ui-color-palette
 # e.g. https://api-uicp.<your-subdomain>.workers.dev
-API_URL = "https://api-uicp.workers.dev"
+API_URL = "https://api-uicp.yelbolt.workers.dev"
