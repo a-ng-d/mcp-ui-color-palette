@@ -49,6 +49,9 @@ export class UICPMcp extends McpAgent<Env> {
       {
         description:
           'Generate a complete color palette from base configuration and theme configurations. Returns a PaletteData object with all color scales.',
+        annotations: {
+          readOnlyHint: true,
+        },
         inputSchema: {
           base: z.record(z.string(), z.unknown()).describe('Base configuration for the palette (colors, preset, algorithm settings)'),
           themes: z.array(z.record(z.string(), z.unknown())).describe('Array of theme configurations (light/dark modes, contrast levels)'),
@@ -61,6 +64,9 @@ export class UICPMcp extends McpAgent<Env> {
       'create_color_harmony',
       {
         description: 'Create color harmonies (complementary, analogous, triadic, tetradic, split-complementary, square) from a base color',
+        annotations: {
+          readOnlyHint: true,
+        },
         inputSchema: {
           baseColor: z
             .record(z.string(), z.unknown())
@@ -80,6 +86,9 @@ export class UICPMcp extends McpAgent<Env> {
       'extract_dominant_colors',
       {
         description: 'Extract the dominant colors from an image using k-means clustering. Supports JPEG and PNG images.',
+        annotations: {
+          readOnlyHint: true,
+        },
         inputSchema: {
           imageUrl: z.string().describe('Public URL of the JPEG or PNG image to extract colors from'),
           colorCount: z.number().optional().describe('Number of dominant colors to extract'),
@@ -95,6 +104,9 @@ export class UICPMcp extends McpAgent<Env> {
       'generate_code',
       {
         description: 'Generate code tokens or design system variables from palette data in various formats',
+        annotations: {
+          readOnlyHint: true,
+        },
         inputSchema: {
           paletteData: z.record(z.string(), z.unknown()).describe('The PaletteData object returned by get_full_palette'),
           format: z
@@ -129,6 +141,9 @@ export class UICPMcp extends McpAgent<Env> {
       'generate_colors_from_prompt',
       {
         description: 'Generate a color palette from a natural language description using AI (Mistral)',
+        annotations: {
+          readOnlyHint: true,
+        },
         inputSchema: {
           prompt: z
             .string()
@@ -145,6 +160,9 @@ export class UICPMcp extends McpAgent<Env> {
       {
         description:
           'Start the passkey authentication flow. Returns an auth URL the user must open in their browser. After completing authentication, use the returned tokens for authorized requests.',
+        annotations: {
+          readOnlyHint: true,
+        },
         inputSchema: {},
       },
       async () => {
@@ -210,6 +228,9 @@ export class UICPMcp extends McpAgent<Env> {
       'list_published_palettes',
       {
         description: 'List publicly shared color palettes from the community',
+        annotations: {
+          readOnlyHint: true,
+        },
         inputSchema: {
           page: z.number().optional().describe('Page number for pagination (default: 1)'),
           limit: z.number().optional().describe('Number of results per page, max 50 (default: 20)'),
@@ -229,6 +250,9 @@ export class UICPMcp extends McpAgent<Env> {
       'list_my_published_palettes',
       {
         description: "List the authenticated user's own published palettes",
+        annotations: {
+          readOnlyHint: true,
+        },
         inputSchema: {
           accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           page: z.number().optional().describe('Page number for pagination (default: 1)'),
@@ -249,6 +273,11 @@ export class UICPMcp extends McpAgent<Env> {
       'publish_palette',
       {
         description: 'Publish a new color palette to the database',
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+        },
         inputSchema: {
           accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           name: z.string().describe('Name of the palette'),
@@ -270,6 +299,9 @@ export class UICPMcp extends McpAgent<Env> {
       'get_published_palette',
       {
         description: 'Get a specific publicly shared palette by its ID',
+        annotations: {
+          readOnlyHint: true,
+        },
         inputSchema: {
           paletteId: z.string().describe('Unique identifier of the palette'),
         },
@@ -281,6 +313,11 @@ export class UICPMcp extends McpAgent<Env> {
       'share_published_palette',
       {
         description: 'Make a published palette publicly visible to the community',
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+        },
         inputSchema: {
           accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           paletteId: z.string().describe('Unique identifier of the palette to share'),
@@ -293,6 +330,11 @@ export class UICPMcp extends McpAgent<Env> {
       'unpublish_palette',
       {
         description: 'Permanently delete a published palette from the database',
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: true,
+        },
         inputSchema: {
           accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           paletteId: z.string().describe('Unique identifier of the palette to delete'),
@@ -305,6 +347,11 @@ export class UICPMcp extends McpAgent<Env> {
       'unshare_published_palette',
       {
         description: 'Make a published palette private (removes it from the public community listing)',
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+        },
         inputSchema: {
           accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           paletteId: z.string().describe('Unique identifier of the palette to unshare'),
@@ -317,6 +364,11 @@ export class UICPMcp extends McpAgent<Env> {
       'update_published_palette',
       {
         description: 'Update an existing published palette with new data',
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+        },
         inputSchema: {
           accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           paletteId: z.string().describe('Unique identifier of the palette to update'),
