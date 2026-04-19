@@ -17,3 +17,8 @@ new_sqlite_classes = ["UICPMcp"]
 # Set this to the deployed URL of api-ui-color-palette
 # e.g. https://api-uicp.<your-subdomain>.workers.dev
 API_URL = "https://api-uicp.yelbolt.workers.dev"
+
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true
