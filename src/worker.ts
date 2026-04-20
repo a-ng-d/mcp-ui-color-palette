@@ -4,7 +4,12 @@ import { z } from 'zod'
 
 interface Env {
   API_URL: string
+  SUPABASE_URL: string
   MCP_OBJECT: DurableObjectNamespace
+}
+
+interface Props extends Record<string, unknown> {
+  accessToken?: string
 }
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -33,7 +38,7 @@ async function apiCall(
 
 // ─── MCP Agent ────────────────────────────────────────────────────────────────
 
-export class UICPMcp extends McpAgent<Env> {
+export class UICPMcp extends McpAgent<Env, unknown, Props> {
   server = new McpServer({
     name: 'ui-color-palette',
     version: '1.0.0',
@@ -41,6 +46,7 @@ export class UICPMcp extends McpAgent<Env> {
 
   async init() {
     const apiUrl = this.env.API_URL
+    const getToken = () => this.props?.accessToken
 
     // ── Palette Generation ──────────────────────────────────────────────
 
@@ -153,75 +159,6 @@ export class UICPMcp extends McpAgent<Env> {
       async ({ prompt }) => apiCall(apiUrl, '/generate-colors-from-prompts', { body: { prompt } }),
     )
 
-    // ── Authentication ──────────────────────────────────────────────────
-
-    this.server.registerTool(
-      'start_authentication',
-      {
-        description:
-          'Start the passkey authentication flow. Returns an auth URL the user must open in their browser. After completing authentication, use the returned tokens for authorized requests.',
-        annotations: {
-          readOnlyHint: true,
-        },
-        inputSchema: {},
-      },
-      async () => {
-        const res = await fetch(`${apiUrl}/authenticate`, { method: 'GET' })
-
-        if (!res.ok || !res.body) {
-          return {
-            content: [{ type: 'text' as const, text: JSON.stringify({ message: `Authentication request failed: ${res.status}` }) }],
-            isError: true,
-          }
-        }
-
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-
-            buffer += decoder.decode(value, { stream: true })
-            const lines = buffer.split('\n')
-            buffer = lines.pop() ?? ''
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const event = JSON.parse(line.slice(6)) as Record<string, unknown>
-                return {
-                  content: [
-                    {
-                      type: 'text' as const,
-                      text: JSON.stringify(
-                        {
-                          ...event,
-                          message:
-                            event.message ??
-                            'Open the auth_url in your browser to authenticate. Once complete, use the returned tokens for authorized tool calls.',
-                        },
-                        null,
-                        2,
-                      ),
-                    },
-                  ],
-                }
-              }
-            }
-          }
-        } finally {
-          reader.cancel()
-        }
-
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ message: 'No authentication event received' }) }],
-          isError: true,
-        }
-      },
-    )
-
     // ── Published Palettes ──────────────────────────────────────────────
 
     this.server.registerTool(
@@ -254,18 +191,17 @@ export class UICPMcp extends McpAgent<Env> {
           readOnlyHint: true,
         },
         inputSchema: {
-          accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           page: z.number().optional().describe('Page number for pagination (default: 1)'),
           limit: z.number().optional().describe('Number of results per page, max 50 (default: 20)'),
           search: z.string().optional().describe('Search term to filter palettes by name'),
         },
       },
-      async ({ accessToken, ...rest }) => {
+      async (args) => {
         const params = new URLSearchParams()
-        if (rest.page != null) params.set('page', String(rest.page))
-        if (rest.limit != null) params.set('limit', String(rest.limit))
-        if (rest.search) params.set('search', rest.search)
-        return apiCall(apiUrl, '/list-my-published-palettes', { method: 'GET', token: accessToken, params })
+        if (args.page != null) params.set('page', String(args.page))
+        if (args.limit != null) params.set('limit', String(args.limit))
+        if (args.search) params.set('search', args.search)
+        return apiCall(apiUrl, '/list-my-published-palettes', { method: 'GET', token: getToken(), params })
       },
     )
 
@@ -279,7 +215,6 @@ export class UICPMcp extends McpAgent<Env> {
           idempotentHint: false,
         },
         inputSchema: {
-          accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           name: z.string().describe('Name of the palette'),
           description: z.string().optional().describe('Optional description of the palette'),
           preset: z.record(z.string(), z.unknown()).describe('Preset configuration used by the palette'),
@@ -292,7 +227,7 @@ export class UICPMcp extends McpAgent<Env> {
           is_shared: z.boolean().optional().describe('Whether the palette is publicly visible (default: false)'),
         },
       },
-      async ({ accessToken, ...body }) => apiCall(apiUrl, '/publish-palette', { body, token: accessToken }),
+      async (body) => apiCall(apiUrl, '/publish-palette', { body, token: getToken() }),
     )
 
     this.server.registerTool(
@@ -319,11 +254,10 @@ export class UICPMcp extends McpAgent<Env> {
           idempotentHint: true,
         },
         inputSchema: {
-          accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           paletteId: z.string().describe('Unique identifier of the palette to share'),
         },
       },
-      async ({ accessToken, paletteId }) => apiCall(apiUrl, `/share-published-palette/${paletteId}`, { token: accessToken }),
+      async ({ paletteId }) => apiCall(apiUrl, `/share-published-palette/${paletteId}`, { token: getToken() }),
     )
 
     this.server.registerTool(
@@ -336,11 +270,10 @@ export class UICPMcp extends McpAgent<Env> {
           idempotentHint: true,
         },
         inputSchema: {
-          accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           paletteId: z.string().describe('Unique identifier of the palette to delete'),
         },
       },
-      async ({ accessToken, paletteId }) => apiCall(apiUrl, `/unpublish-palette/${paletteId}`, { method: 'DELETE', token: accessToken }),
+      async ({ paletteId }) => apiCall(apiUrl, `/unpublish-palette/${paletteId}`, { method: 'DELETE', token: getToken() }),
     )
 
     this.server.registerTool(
@@ -353,11 +286,10 @@ export class UICPMcp extends McpAgent<Env> {
           idempotentHint: true,
         },
         inputSchema: {
-          accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           paletteId: z.string().describe('Unique identifier of the palette to unshare'),
         },
       },
-      async ({ accessToken, paletteId }) => apiCall(apiUrl, `/unshare-published-palette/${paletteId}`, { token: accessToken }),
+      async ({ paletteId }) => apiCall(apiUrl, `/unshare-published-palette/${paletteId}`, { token: getToken() }),
     )
 
     this.server.registerTool(
@@ -370,7 +302,6 @@ export class UICPMcp extends McpAgent<Env> {
           idempotentHint: true,
         },
         inputSchema: {
-          accessToken: z.string().describe('JWT access token obtained from start_authentication'),
           paletteId: z.string().describe('Unique identifier of the palette to update'),
           name: z.string().optional().describe('Updated name'),
           description: z.string().optional().describe('Updated description'),
@@ -384,8 +315,7 @@ export class UICPMcp extends McpAgent<Env> {
           is_shared: z.boolean().optional().describe('Updated sharing visibility'),
         },
       },
-      async ({ accessToken, paletteId, ...body }) =>
-        apiCall(apiUrl, `/update-published-palette/${paletteId}`, { body, token: accessToken }),
+      async ({ paletteId, ...body }) => apiCall(apiUrl, `/update-published-palette/${paletteId}`, { body, token: getToken() }),
     )
   }
 }
@@ -396,7 +326,22 @@ export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url)
 
+    // OAuth 2.1 discovery — proxy Supabase's authorization server metadata so
+    // MCP clients can auto-configure without any manual setup.
+    if (url.pathname === '/.well-known/oauth-authorization-server') {
+      // Custom auth domain: discovery is at the root (no /auth/v1 suffix)
+      return fetch(`${env.SUPABASE_URL}/auth/v1/.well-known/oauth-authorization-server`)
+    }
+
     if (url.pathname === '/mcp') {
+      // Extract the Bearer token issued by Supabase OAuth and inject it into
+      // ctx.props so McpAgent passes it to the Durable Object via getAgentByName.
+      const authHeader = request.headers.get('Authorization')
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
+      if (token) {
+        ;(ctx as unknown as { props: Props }).props = { accessToken: token }
+      }
+
       return UICPMcp.serve('/mcp').fetch(request, env, ctx)
     }
 
