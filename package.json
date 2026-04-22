@@ -1,6 +1,6 @@
 {
   "name": "mcp-ui-color-palette",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",
