@@ -15,7 +15,7 @@ new_sqlite_classes = ["UICPMcp"]
 
 [vars]
 API_URL = "https://api-uicp.yelbolt.workers.dev"
-SUPABASE_URL = "https://zclweepgvqkrelyfwhma.supabase.co"
+OAUTH_SERVER_URL = "https://zclweepgvqkrelyfwhma.supabase.co"
 
 [observability]
 [observability.logs]

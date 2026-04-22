@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 interface Env {
   API_URL: string
-  SUPABASE_URL: string
+  OAUTH_SERVER_URL: string
   MCP_OBJECT: DurableObjectNamespace
 }
 
@@ -326,11 +326,10 @@ export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url)
 
-    // OAuth 2.1 discovery — proxy Supabase's authorization server metadata so
+    // OAuth 2.1 discovery — proxy the auth worker's authorization server metadata so
     // MCP clients can auto-configure without any manual setup.
     if (url.pathname === '/.well-known/oauth-authorization-server') {
-      // Custom auth domain: discovery is at the root (no /auth/v1 suffix)
-      return fetch(`${env.SUPABASE_URL}/auth/v1/.well-known/oauth-authorization-server`)
+      return fetch(`${env.OAUTH_SERVER_URL}/.well-known/oauth-authorization-server/auth/v1`)
     }
 
     if (url.pathname === '/mcp') {
