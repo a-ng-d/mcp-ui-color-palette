@@ -325,13 +325,53 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
 // ─── Worker Entry Point ───────────────────────────────────────────────────────
 
 export default {
-  fetch(request: Request, env: Env, ctx: ExecutionContext) {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url)
 
-    // OAuth 2.1 discovery — proxy the auth worker's authorization server metadata so
-    // MCP clients can auto-configure without any manual setup.
+    // OAuth 2.1 discovery — proxy Supabase's authorization server metadata but
+    // replace `token_endpoint` with our own proxy so we can normalise
+    // non-RFC-6749 Supabase error responses before the MCP SDK validates them.
     if (url.pathname === '/.well-known/oauth-authorization-server') {
-      return fetch(`${env.OAUTH_SERVER_URL}/.well-known/oauth-authorization-server/auth/v1`)
+      const res = await fetch(`${env.OAUTH_SERVER_URL}/.well-known/oauth-authorization-server/auth/v1`)
+      const metadata = (await res.json()) as Record<string, unknown>
+      metadata.token_endpoint = `${url.origin}/oauth/token`
+      return new Response(JSON.stringify(metadata), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Token proxy — forward the code-exchange to Supabase and convert its
+    // non-standard error body `{code, error_code, msg}` into the RFC 6749
+    // shape `{error, error_description}` that the MCP SDK expects.
+    if (url.pathname === '/oauth/token' && request.method === 'POST') {
+      const body = await request.arrayBuffer()
+      const supabaseRes = await fetch(`${env.OAUTH_SERVER_URL}/auth/v1/oauth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': request.headers.get('Content-Type') ?? 'application/x-www-form-urlencoded' },
+        body,
+      })
+
+      if (!supabaseRes.ok) {
+        let errBody: Record<string, unknown> = {}
+        try {
+          errBody = (await supabaseRes.json()) as Record<string, unknown>
+        } catch {
+          // ignore parse failure — fall through with empty errBody
+        }
+        return new Response(
+          JSON.stringify({
+            error: String(errBody.error ?? errBody.error_code ?? 'server_error'),
+            error_description: String(errBody.error_description ?? errBody.msg ?? 'Unexpected server error'),
+          }),
+          { status: supabaseRes.status, headers: { 'Content-Type': 'application/json' } },
+        )
+      }
+
+      return new Response(supabaseRes.body, {
+        status: supabaseRes.status,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
     if (url.pathname === '/mcp') {
