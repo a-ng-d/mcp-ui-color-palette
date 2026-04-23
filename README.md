@@ -13,7 +13,7 @@ Streamable HTTP at `/mcp` (supports both SSE and Streamable HTTP transports).
 | Tool                          | Description                                                                                             |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `get_full_palette`            | Generate a complete color palette from base and theme configurations                                    |
-| `create_color_harmony`        | Create color harmonies (complementary, analogous, triadic, tetradic, split-complementary, square)       |
+| `create_color_harmony`        | Create color harmonies (complementary, analogous, triadic, tetradic, compound, square)       |
 | `extract_dominant_colors`     | Extract dominant colors from a JPEG/PNG image URL                                                       |
 | `generate_code`               | Generate design tokens/code from base + themes (CSS, SCSS, Less, Tailwind v3/v4, SwiftUI, UIKit, Compose, CSV, DTCG, etc.) |
 | `generate_colors_from_prompt` | Generate a palette from a natural language description via AI                                           |

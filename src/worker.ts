@@ -69,18 +69,19 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
     this.server.registerTool(
       'create_color_harmony',
       {
-        description: 'Create color harmonies (complementary, analogous, triadic, tetradic, split-complementary, square) from a base color',
+        description: 'Create color harmonies (complementary, analogous, triadic, tetradic, compound, square) from a base color',
         annotations: {
           readOnlyHint: true,
         },
         inputSchema: {
           baseColor: z
-            .record(z.string(), z.unknown())
-            .describe('The base color as a Channel object with hue, saturation, and lightness values'),
+            .tuple([z.number(), z.number(), z.number()])
+            .describe('The base color as an RGB Channel tuple [r, g, b] with values 0–255'),
+
           analogousSpread: z.number().optional().describe('Spread angle in degrees for analogous harmonies'),
           returnFormat: z.enum(['rgb', 'hex', 'both']).optional().describe('Return format for generated colors (default: both)'),
           type: z
-            .enum(['ALL', 'COMPLEMENTARY', 'SPLIT_COMPLEMENTARY', 'ANALOGOUS', 'TRIADIC', 'TETRADIC', 'SQUARE'])
+            .enum(['ALL', 'COMPLEMENTARY', 'ANALOGOUS', 'TRIADIC', 'TETRADIC', 'SQUARE', 'COMPOUND'])
             .optional()
             .describe('Specific harmony type to generate, or "ALL" for all harmony types'),
         },
@@ -136,7 +137,7 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
             .optional()
             .describe('Output format for generated code (default: css)'),
           colorSpace: z
-            .enum(['RGB', 'LCH', 'LAB', 'HSL', 'OKLCH', 'OKLAB', 'P3'])
+            .enum(['RGB', 'LCH', 'OKLCH', 'LAB', 'OKLAB', 'HSL', 'HSLUV', 'HSV', 'CMYK', 'HEX', 'P3'])
             .optional()
             .describe('Color space for output values (default: RGB)'),
         },
