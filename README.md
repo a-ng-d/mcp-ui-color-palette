@@ -31,9 +31,7 @@ This mirrors the API `POST /generate-code` contract and no longer uses a `palett
 
 ### Authentication
 
-| Tool                   | Description                                                  |
-| ---------------------- | ------------------------------------------------------------ |
-| `start_authentication` | Start a passkey auth flow — returns a URL to open in browser |
+Authenticated tools (`Auth: Yes`) use **OAuth 2.1**. MCP clients that support OAuth auto-configure via the discovery endpoint at `/.well-known/oauth-authorization-server`. The Bearer token is passed in the `Authorization` header and injected into every tool call automatically — no manual token parameter is needed.
 
 ### Published Palettes
 
