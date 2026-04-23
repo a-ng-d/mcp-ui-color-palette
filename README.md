@@ -15,8 +15,19 @@ Streamable HTTP at `/mcp` (supports both SSE and Streamable HTTP transports).
 | `get_full_palette`            | Generate a complete color palette from base and theme configurations                                    |
 | `create_color_harmony`        | Create color harmonies (complementary, analogous, triadic, tetradic, split-complementary, square)       |
 | `extract_dominant_colors`     | Extract dominant colors from a JPEG/PNG image URL                                                       |
-| `generate_code`               | Generate design tokens/code (CSS, SCSS, Less, Tailwind v3/v4, SwiftUI, UIKit, Compose, CSV, DTCG, etc.) |
+| `generate_code`               | Generate design tokens/code from base + themes (CSS, SCSS, Less, Tailwind v3/v4, SwiftUI, UIKit, Compose, CSV, DTCG, etc.) |
 | `generate_colors_from_prompt` | Generate a palette from a natural language description via AI                                           |
+
+#### generate_code input
+
+The `generate_code` tool expects:
+
+- `base`: base palette configuration
+- `themes`: array of theme configurations
+- `format` (optional)
+- `colorSpace` (optional)
+
+This mirrors the API `POST /generate-code` contract and no longer uses a `paletteData` input.
 
 ### Authentication
 

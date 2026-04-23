@@ -109,12 +109,13 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
     this.server.registerTool(
       'generate_code',
       {
-        description: 'Generate code tokens or design system variables from palette data in various formats',
+        description: 'Generate code tokens or design system variables from base and theme configurations in various formats',
         annotations: {
           readOnlyHint: true,
         },
         inputSchema: {
-          paletteData: z.record(z.string(), z.unknown()).describe('The PaletteData object returned by get_full_palette'),
+          base: z.record(z.string(), z.unknown()).describe('Base configuration for the palette (colors, preset, algorithm settings)'),
+          themes: z.array(z.record(z.string(), z.unknown())).describe('Array of theme configurations (light/dark modes, contrast levels)'),
           format: z
             .enum([
               'css',
