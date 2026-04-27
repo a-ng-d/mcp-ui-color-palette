@@ -20,7 +20,8 @@ async function apiCall(
   options: { method?: string; body?: unknown; token?: string; params?: URLSearchParams } = {},
 ): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
   const { method = 'POST', body, token, params } = options
-  const url = params ? `${apiUrl}${path}?${params}` : `${apiUrl}${path}`
+  const versionedPath = path.startsWith('/v1') ? path : `/v1${path.startsWith('/') ? path : `/${path}`}`
+  const url = params ? `${apiUrl}${versionedPath}?${params}` : `${apiUrl}${versionedPath}`
   const headers: Record<string, string> = {}
 
   if (body) headers['Content-Type'] = 'application/json'

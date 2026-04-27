@@ -27,7 +27,9 @@ The `generate_code` tool expects:
 - `format` (optional)
 - `colorSpace` (optional)
 
-This mirrors the API `POST /generate-code` contract and no longer uses a `paletteData` input.
+This mirrors the API `POST /v1/generate-code` contract and no longer uses a `paletteData` input.
+
+The MCP server calls versioned API routes and automatically prefixes requests with `/v1`.
 
 ### Authentication
 
@@ -95,7 +97,7 @@ npm run deploy     # Deploy to Cloudflare
 
 | Variable  | Description                                                                                       |
 | --------- | ------------------------------------------------------------------------------------------------- |
-| `API_URL` | URL of the deployed [api-ui-color-palette](https://github.com/a-ng-d/api-ui-color-palette) worker |
+| `API_URL` | Base URL of the deployed [api-ui-color-palette](https://github.com/a-ng-d/api-ui-color-palette) worker (without `/v1`) |
 
 ## License
 
