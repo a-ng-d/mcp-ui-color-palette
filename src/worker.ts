@@ -12,7 +12,20 @@ interface Props extends Record<string, unknown> {
   accessToken?: string
 }
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function requireAuth(token: string | undefined): { content: Array<{ type: 'text'; text: string }>; isError: true } | null {
+  if (token) return null
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify({ error: 'Authentication required. Please sign in via OAuth to use this tool.' }),
+      },
+    ],
+    isError: true,
+  }
+}
 
 async function apiCall(
   apiUrl: string,
@@ -200,11 +213,14 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
         },
       },
       async (args) => {
+        const token = getToken()
+        const authError = requireAuth(token)
+        if (authError) return authError
         const params = new URLSearchParams()
         if (args.page != null) params.set('page', String(args.page))
         if (args.limit != null) params.set('limit', String(args.limit))
         if (args.search) params.set('search', args.search)
-        return apiCall(apiUrl, '/list-my-published-palettes', { method: 'GET', token: getToken(), params })
+        return apiCall(apiUrl, '/list-my-published-palettes', { method: 'GET', token, params })
       },
     )
 
@@ -230,7 +246,12 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           is_shared: z.boolean().optional().describe('Whether the palette is publicly visible (default: false)'),
         },
       },
-      async (body) => apiCall(apiUrl, '/publish-palette', { body, token: getToken() }),
+      async (body) => {
+        const token = getToken()
+        const authError = requireAuth(token)
+        if (authError) return authError
+        return apiCall(apiUrl, '/publish-palette', { body, token })
+      },
     )
 
     this.server.registerTool(
@@ -260,7 +281,12 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           paletteId: z.string().describe('Unique identifier of the palette to share'),
         },
       },
-      async ({ paletteId }) => apiCall(apiUrl, `/share-published-palette/${paletteId}`, { token: getToken() }),
+      async ({ paletteId }) => {
+        const token = getToken()
+        const authError = requireAuth(token)
+        if (authError) return authError
+        return apiCall(apiUrl, `/share-published-palette/${paletteId}`, { token })
+      },
     )
 
     this.server.registerTool(
@@ -276,7 +302,12 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           paletteId: z.string().describe('Unique identifier of the palette to delete'),
         },
       },
-      async ({ paletteId }) => apiCall(apiUrl, `/unpublish-palette/${paletteId}`, { method: 'DELETE', token: getToken() }),
+      async ({ paletteId }) => {
+        const token = getToken()
+        const authError = requireAuth(token)
+        if (authError) return authError
+        return apiCall(apiUrl, `/unpublish-palette/${paletteId}`, { method: 'DELETE', token })
+      },
     )
 
     this.server.registerTool(
@@ -292,7 +323,12 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           paletteId: z.string().describe('Unique identifier of the palette to unshare'),
         },
       },
-      async ({ paletteId }) => apiCall(apiUrl, `/unshare-published-palette/${paletteId}`, { token: getToken() }),
+      async ({ paletteId }) => {
+        const token = getToken()
+        const authError = requireAuth(token)
+        if (authError) return authError
+        return apiCall(apiUrl, `/unshare-published-palette/${paletteId}`, { token })
+      },
     )
 
     this.server.registerTool(
@@ -318,7 +354,12 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           is_shared: z.boolean().optional().describe('Updated sharing visibility'),
         },
       },
-      async ({ paletteId, ...body }) => apiCall(apiUrl, `/update-published-palette/${paletteId}`, { body, token: getToken() }),
+      async ({ paletteId, ...body }) => {
+        const token = getToken()
+        const authError = requireAuth(token)
+        if (authError) return authError
+        return apiCall(apiUrl, `/update-published-palette/${paletteId}`, { body, token })
+      },
     )
   }
 }
