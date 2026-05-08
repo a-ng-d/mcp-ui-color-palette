@@ -214,6 +214,51 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
             .enum(['RGB', 'LCH', 'OKLCH', 'LAB', 'OKLAB', 'HSL', 'HSLUV', 'HSV', 'CMYK', 'HEX', 'P3'])
             .optional()
             .describe('Color space for output values (default: RGB)'),
+          system: z
+            .object({
+              schema: z
+                .object({
+                  groups: z
+                    .array(
+                      z.object({
+                        id: z.string().describe('Unique identifier for the taxonomy group'),
+                        name: z.string().describe('Display name of the group'),
+                        members: z
+                          .array(
+                            z.object({
+                              id: z.string().describe('Unique identifier for the member'),
+                              name: z.string().describe('Display name of the member'),
+                            }),
+                          )
+                          .describe('Members belonging to this group'),
+                      }),
+                    )
+                    .describe('Taxonomy groups forming the cartesian product of semantic token paths'),
+                })
+                .describe('Taxonomy schema defining the structure of the color system'),
+              bindings: z
+                .array(
+                  z.object({
+                    path: z.array(z.string()).describe('Ordered member ids identifying the token (one per group)'),
+                    description: z.string().optional().describe('Optional description for the token'),
+                    ref: z.string().describe('Default primitive ref in the format "colorId:shadeName" (e.g. "blue:500")'),
+                    overrides: z
+                      .record(z.string(), z.string())
+                      .optional()
+                      .describe('Per-theme overrides mapping themeId to a different "colorId:shadeName" ref'),
+                    isExcluded: z
+                      .boolean()
+                      .optional()
+                      .describe('When true the token is present in the output but excluded from code generation'),
+                  }),
+                )
+                .optional()
+                .describe('Bindings mapping taxonomy paths to primitive color refs'),
+            })
+            .optional()
+            .describe(
+              'Optional color system configuration. When provided, a semantics file is generated alongside the primitives file, with semantic tokens referencing the primitive shades.',
+            ),
         },
       },
       async (args) => apiCall(apiUrl, '/generate-code', { body: args }),
