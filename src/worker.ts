@@ -50,6 +50,98 @@ async function apiCall(
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }], isError: !res.ok }
 }
 
+// ─── Shared Schemas ───────────────────────────────────────────────────────────
+
+// RgbModel: MUST be an object {r, g, b} with NORMALIZED values 0.0–1.0 — NOT an array, NOT 0-255
+// Example: rgb(122, 92, 79) → {r: 0.478, g: 0.361, b: 0.310}
+const zRgb = z
+  .object({
+    r: z.number().min(0).max(1).describe('Red channel, normalized 0.0–1.0 (divide 0-255 value by 255)'),
+    g: z.number().min(0).max(1).describe('Green channel, normalized 0.0–1.0 (divide 0-255 value by 255)'),
+    b: z.number().min(0).max(1).describe('Blue channel, normalized 0.0–1.0 (divide 0-255 value by 255)'),
+    a: z.number().min(0).max(1).optional().describe('Alpha channel, normalized 0.0–1.0 (optional)'),
+  })
+  .describe('RGB color as a normalized object {r, g, b} with values 0.0–1.0 — NOT an array, NOT 0-255 integers')
+
+// PresetConfiguration: defines the shade scale structure.
+// Use well-known preset ids: MATERIAL (stops [50,100–900], min 24, max 96),
+// TAILWIND (stops [50,100–900,950], min 16, max 96),
+// MATERIAL_3 (stops [0,10,20,30,40,50,60,70,80,90,95,99,100], min 0, max 100),
+// ANT (stops [1–10], min 24, max 96).
+// You may also define a custom preset with arbitrary stops.
+const zPreset = z.object({
+  id: z.string().describe('Preset identifier, e.g. "MATERIAL", "TAILWIND", "MATERIAL_3", "ANT"'),
+  name: z.string().describe('Human-readable preset name'),
+  stops: z
+    .array(z.number())
+    .describe('Ordered list of shade stops as numbers, e.g. [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]'),
+  min: z.number().describe('Minimum lightness percentage for the scale (e.g. 24)'),
+  max: z.number().describe('Maximum lightness percentage for the scale (e.g. 96)'),
+  easing: z
+    .enum(['NONE', 'LINEAR', 'EASEIN_SINE', 'EASEOUT_SINE', 'EASEINOUT_SINE', 'EASEIN_QUAD', 'EASEOUT_QUAD', 'EASEINOUT_QUAD', 'EASEIN_CUBIC', 'EASEOUT_CUBIC', 'EASEINOUT_CUBIC'])
+    .describe('Easing curve applied to lightness distribution across stops'),
+  family: z.string().optional().describe('Optional preset family label (e.g. "Google", "Framework")'),
+})
+
+const zColor = z.object({
+  id: z.string().describe('Unique identifier for the color (e.g. "blue", "primary")'),
+  name: z.string().describe('Display name for the color'),
+  description: z.string().optional().describe('Optional description, use empty string if none'),
+  rgb: zRgb,
+  hue: z
+    .object({ shift: z.number(), isLocked: z.boolean() })
+    .describe('Hue shift — use {shift: 0, isLocked: false} for no adjustment'),
+  chroma: z
+    .object({ shift: z.number(), isLocked: z.boolean() })
+    .describe('Chroma/saturation shift — use {shift: 0, isLocked: false} for no adjustment'),
+  alpha: z
+    .object({ isEnabled: z.boolean(), backgroundColor: z.string() })
+    .describe('Alpha config — use {isEnabled: false, backgroundColor: "#FFFFFF"} unless transparency is needed'),
+})
+
+const zBase = z.object({
+  name: z.string().optional().describe('Palette name'),
+  description: z.string().optional().describe('Palette description'),
+  preset: zPreset,
+  shift: z
+    .object({
+      chroma: z.number().describe('Global chroma/saturation shift applied to all colors'),
+      hue: z.number().describe('Global hue shift applied to all colors'),
+    })
+    .describe('Global shift adjustments (use {chroma: 0, hue: 0} for no shift)'),
+  areSourceColorsLocked: z.boolean().optional().describe('Whether source colors are locked (default: false)'),
+  colors: z.array(zColor).describe('Source colors to generate shades from'),
+  colorSpace: z
+    .enum(['LCH', 'OKLCH', 'LAB', 'OKLAB', 'HSL', 'HSLUV', 'HSV', 'CMYK', 'RGB', 'HEX', 'P3'])
+    .describe('Color space used for shade interpolation (default: "LCH")'),  
+  algorithmVersion: z.enum(['v1', 'v2', 'v3']).describe('Algorithm version (use "v3" for best results)'),
+})
+
+const zTheme = z.object({
+  id: z.string().optional().describe('Theme identifier (auto-generated if omitted)'),
+  name: z.string().describe('Theme name (e.g. "Light", "Dark")'),
+  description: z.string().optional().describe('Theme description, use empty string if none'),
+  scale: z
+    .record(z.string(), z.number())
+    .optional()
+    .describe(
+      'Lightness scale: maps each stop name (string) to a lightness percentage (number). ' +
+      'If omitted, a linear scale is auto-generated from the preset stops/min/max. ' +
+      'Example for MATERIAL: {"50": 96, "100": 88, "200": 80, "300": 70, "400": 60, "500": 50, "600": 41, "700": 33, "800": 26, "900": 24}.',
+    ),
+  visionSimulationMode: z
+    .enum(['NONE', 'PROTANOMALY', 'PROTANOPIA', 'DEUTERANOMALY', 'DEUTERANOPIA', 'TRITANOMALY', 'TRITANOPIA', 'ACHROMATOMALY', 'ACHROMATOPSIA'])
+    .optional()
+    .describe('Color vision deficiency simulation — use "NONE" unless specifically needed'),
+  textColorsTheme: z
+    .object({ lightColor: z.string(), darkColor: z.string() })
+    .optional()
+    .describe('Text colors used for contrast display — use {lightColor: "#FFFFFF", darkColor: "#000000"} by default'),
+  paletteBackground: z.string().optional().describe('Hex background color for the palette canvas — use "#FFFFFF" by default'),
+  isEnabled: z.boolean().optional().describe('Whether this theme is active — use true'),
+  type: z.enum(['default theme', 'custom theme']).optional().describe('Theme type — use "default theme" unless it is a custom override'),
+})
+
 // ─── MCP Agent ────────────────────────────────────────────────────────────────
 
 export class UICPMcp extends McpAgent<Env, unknown, Props> {
@@ -73,8 +165,8 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           readOnlyHint: true,
         },
         inputSchema: {
-          base: z.record(z.string(), z.unknown()).describe('Base configuration for the palette (colors, preset, algorithm settings)'),
-          themes: z.array(z.record(z.string(), z.unknown())).describe('Array of theme configurations (light/dark modes, contrast levels)'),
+          base: zBase,
+          themes: z.array(zTheme).describe('Array of theme configurations (light and/or dark modes)'),
         },
       },
       async ({ base, themes }) => apiCall(apiUrl, '/get-palette', { body: { base, themes } }),
@@ -89,8 +181,8 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           readOnlyHint: true,
         },
         inputSchema: {
-          base: z.record(z.string(), z.unknown()).describe('Base configuration for the palette (colors, preset, algorithm settings)'),
-          themes: z.array(z.record(z.string(), z.unknown())).describe('Array of theme configurations (light/dark modes, contrast levels)'),
+          base: zBase,
+          themes: z.array(zTheme).describe('Array of theme configurations (light and/or dark modes)'),
           system: z
             .object({
               schema: z
@@ -189,8 +281,8 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           readOnlyHint: true,
         },
         inputSchema: {
-          base: z.record(z.string(), z.unknown()).describe('Base configuration for the palette (colors, preset, algorithm settings)'),
-          themes: z.array(z.record(z.string(), z.unknown())).describe('Array of theme configurations (light/dark modes, contrast levels)'),
+          base: zBase,
+          themes: z.array(zTheme).describe('Array of theme configurations (light and/or dark modes)'),
           format: z
             .enum([
               'css',
