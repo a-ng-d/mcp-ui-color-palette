@@ -65,7 +65,7 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
     // ── Palette Generation ──────────────────────────────────────────────
 
     this.server.registerTool(
-      'get_full_palette',
+      'get_palette',
       {
         description:
           'Generate a complete color palette from base configuration and theme configurations. Returns a PaletteData object with all color scales.',
@@ -77,7 +77,67 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           themes: z.array(z.record(z.string(), z.unknown())).describe('Array of theme configurations (light/dark modes, contrast levels)'),
         },
       },
-      async ({ base, themes }) => apiCall(apiUrl, '/get-full-palette', { body: { base, themes } }),
+      async ({ base, themes }) => apiCall(apiUrl, '/get-palette', { body: { base, themes } }),
+    )
+
+    this.server.registerTool(
+      'get_color_system',
+      {
+        description:
+          'Build a semantic color system (SystemData) by resolving taxonomy bindings against a generated palette. Returns a SystemData object with all tokens and their per-theme primitive refs.',
+        annotations: {
+          readOnlyHint: true,
+        },
+        inputSchema: {
+          base: z.record(z.string(), z.unknown()).describe('Base configuration for the palette (colors, preset, algorithm settings)'),
+          themes: z.array(z.record(z.string(), z.unknown())).describe('Array of theme configurations (light/dark modes, contrast levels)'),
+          system: z
+            .object({
+              schema: z
+                .object({
+                  groups: z
+                    .array(
+                      z.object({
+                        id: z.string().describe('Unique identifier for the taxonomy group'),
+                        name: z.string().describe('Display name of the group'),
+                        members: z
+                          .array(
+                            z.object({
+                              id: z.string().describe('Unique identifier for the member'),
+                              name: z.string().describe('Display name of the member'),
+                            }),
+                          )
+                          .describe('Members belonging to this group'),
+                      }),
+                    )
+                    .describe('Taxonomy groups that form the cartesian product of semantic token paths'),
+                })
+                .describe('Taxonomy schema defining the structure of the color system'),
+              bindings: z
+                .array(
+                  z.object({
+                    path: z.array(z.string()).describe('Ordered member ids identifying the token (one per group)'),
+                    description: z.string().optional().describe('Optional description for the token'),
+                    ref: z
+                      .string()
+                      .describe('Default primitive ref in the format "colorId:shadeName" (e.g. "blue:500")'),
+                    overrides: z
+                      .record(z.string(), z.string())
+                      .optional()
+                      .describe('Per-theme overrides mapping themeId to a different "colorId:shadeName" ref'),
+                    isExcluded: z
+                      .boolean()
+                      .optional()
+                      .describe('When true the token is present in the output but excluded from code generation'),
+                  }),
+                )
+                .optional()
+                .describe('Bindings mapping taxonomy paths to primitive color refs'),
+            })
+            .describe('System configuration with taxonomy schema and optional bindings'),
+        },
+      },
+      async (args) => apiCall(apiUrl, '/get-color-system', { body: args }),
     )
 
     this.server.registerTool(
