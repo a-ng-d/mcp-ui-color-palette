@@ -475,35 +475,61 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url)
 
-    // OAuth 2.1 discovery — proxy Supabase's authorization server metadata but
-    // replace `token_endpoint` with our own proxy so we can normalise
-    // non-RFC-6749 Supabase error responses before the MCP SDK validates them.
     if (url.pathname === '/.well-known/oauth-authorization-server') {
       const res = await fetch(`${env.OAUTH_SERVER_URL}/.well-known/oauth-authorization-server/auth/v1`)
       const metadata = (await res.json()) as Record<string, unknown>
       metadata.issuer = url.origin
       metadata.token_endpoint = `${url.origin}/oauth/token`
+      metadata.registration_endpoint = `${url.origin}/oauth/register`
       return new Response(JSON.stringify(metadata), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
-    // Token proxy — forward the code-exchange to Supabase and convert its
-    // non-standard error body `{code, error_code, msg}` into the RFC 6749
-    // shape `{error, error_description}` that the MCP SDK expects.
+    if (url.pathname === '/oauth/register' && request.method === 'POST') {
+      let regBody: Record<string, unknown> = {}
+      try {
+        regBody = (await request.json()) as Record<string, unknown>
+      } catch {
+        // ignore
+      }
+      regBody.token_endpoint_auth_method = 'none'
+      console.log('[register-proxy] forwarding registration:', JSON.stringify(regBody))
+
+      const supabaseRes = await fetch(`${env.OAUTH_SERVER_URL}/auth/v1/oauth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(regBody),
+      })
+
+      const responseText = await supabaseRes.text()
+      console.log('[register-proxy] supabase status:', supabaseRes.status, 'body:', responseText)
+
+      return new Response(responseText, {
+        status: supabaseRes.status,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     if (url.pathname === '/oauth/token' && request.method === 'POST') {
       const body = await request.arrayBuffer()
+      const requestBody = new TextDecoder().decode(body)
+      console.log('[token-proxy] request body:', requestBody)
+
       const supabaseRes = await fetch(`${env.OAUTH_SERVER_URL}/auth/v1/oauth/token`, {
         method: 'POST',
         headers: { 'Content-Type': request.headers.get('Content-Type') ?? 'application/x-www-form-urlencoded' },
         body,
       })
 
+      const responseText = await supabaseRes.text()
+      console.log('[token-proxy] supabase status:', supabaseRes.status, 'body:', responseText)
+
       if (!supabaseRes.ok) {
         let errBody: Record<string, unknown> = {}
         try {
-          errBody = (await supabaseRes.json()) as Record<string, unknown>
+          errBody = JSON.parse(responseText) as Record<string, unknown>
         } catch {
           // ignore parse failure — fall through with empty errBody
         }
@@ -516,15 +542,13 @@ export default {
         )
       }
 
-      return new Response(supabaseRes.body, {
+      return new Response(responseText, {
         status: supabaseRes.status,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
     if (url.pathname === '/mcp') {
-      // Extract the Bearer token issued by Supabase OAuth and inject it into
-      // ctx.props so McpAgent passes it to the Durable Object via getAgentByName.
       const authHeader = request.headers.get('Authorization')
       const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
       if (token) {
