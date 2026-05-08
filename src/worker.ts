@@ -481,6 +481,7 @@ export default {
     if (url.pathname === '/.well-known/oauth-authorization-server') {
       const res = await fetch(`${env.OAUTH_SERVER_URL}/.well-known/oauth-authorization-server/auth/v1`)
       const metadata = (await res.json()) as Record<string, unknown>
+      metadata.issuer = url.origin
       metadata.token_endpoint = `${url.origin}/oauth/token`
       return new Response(JSON.stringify(metadata), {
         status: 200,
