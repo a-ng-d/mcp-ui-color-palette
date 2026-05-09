@@ -13,7 +13,11 @@ export function registerCommunityTools(server: McpServer, apiUrl: string, getTok
       },
       inputSchema: {
         page: z.number().optional().describe('Page number for pagination (default: 1)'),
-        limit: z.number().optional().describe('Number of results per page, max 50 (default: 20)'),
+        limit: z
+          .number()
+          .optional()
+          .describe('Number of results per page, max 50 (default: 20, recommended: 5 — keep low to avoid large payloads)'),
+
         search: z.string().optional().describe('Search term to filter palettes by name'),
       },
     },
@@ -35,7 +39,11 @@ export function registerCommunityTools(server: McpServer, apiUrl: string, getTok
       },
       inputSchema: {
         page: z.number().optional().describe('Page number for pagination (default: 1)'),
-        limit: z.number().optional().describe('Number of results per page, max 50 (default: 20)'),
+        limit: z
+          .number()
+          .optional()
+          .describe('Number of results per page, max 50 (default: 20, recommended: 5 — keep low to avoid large payloads)'),
+
         search: z.string().optional().describe('Search term to filter palettes by name'),
       },
     },
