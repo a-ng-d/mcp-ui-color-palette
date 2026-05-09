@@ -5,6 +5,7 @@ import { z } from 'zod'
 interface Env {
   API_URL: string
   OAUTH_SERVER_URL: string
+  SUPABASE_ANON_KEY: string
   MCP_OBJECT: DurableObjectNamespace
 }
 
@@ -52,8 +53,6 @@ async function apiCall(
 
 // ─── Shared Schemas ───────────────────────────────────────────────────────────
 
-// RgbModel: MUST be an object {r, g, b} with NORMALIZED values 0.0–1.0 — NOT an array, NOT 0-255
-// Example: rgb(122, 92, 79) → {r: 0.478, g: 0.361, b: 0.310}
 const zRgb = z
   .object({
     r: z.number().min(0).max(1).describe('Red channel, normalized 0.0–1.0 (divide 0-255 value by 255)'),
@@ -63,12 +62,7 @@ const zRgb = z
   })
   .describe('RGB color as a normalized object {r, g, b} with values 0.0–1.0 — NOT an array, NOT 0-255 integers')
 
-// PresetConfiguration: defines the shade scale structure.
-// Use well-known preset ids: MATERIAL (stops [50,100–900], min 24, max 96),
-// TAILWIND (stops [50,100–900,950], min 16, max 96),
-// MATERIAL_3 (stops [0,10,20,30,40,50,60,70,80,90,95,99,100], min 0, max 100),
-// ANT (stops [1–10], min 24, max 96).
-// You may also define a custom preset with arbitrary stops.
+
 const zPreset = z.object({
   id: z.string().describe('Preset identifier, e.g. "MATERIAL", "TAILWIND", "MATERIAL_3", "ANT"'),
   name: z.string().describe('Human-readable preset name'),
@@ -150,9 +144,40 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
     version: '1.0.0',
   })
 
+  private _accessToken?: string
+
+  async setName(name: string, props?: Record<string, unknown>) {
+    const token = (props as Props | undefined)?.accessToken
+    if (token) {
+      this._accessToken = token
+      await this.ctx.storage.put('accessToken', token)
+    }
+    return super.setName(name, props)
+  }
+
+  async onStart(props?: Props) {
+    if (props?.accessToken) {
+      this._accessToken = props.accessToken
+      await this.ctx.storage.put('accessToken', props.accessToken)
+    } else {
+      this._accessToken = (await this.ctx.storage.get<string>('accessToken')) ?? undefined
+    }
+    await super.onStart(props)
+  }
+
+  async onConnect(conn: unknown, connCtx: { request: Request }) {
+    const authHeader = connCtx.request.headers.get('Authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
+    if (token) {
+      this._accessToken = token
+      await this.ctx.storage.put('accessToken', token)
+    }
+    return super.onConnect(conn as Parameters<typeof super.onConnect>[0], connCtx)
+  }
+
   async init() {
     const apiUrl = this.env.API_URL
-    const getToken = () => this.props?.accessToken
+    const getToken = () => this._accessToken
 
     // ── Palette Generation ──────────────────────────────────────────────
 
@@ -210,9 +235,7 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
                   z.object({
                     path: z.array(z.string()).describe('Ordered member ids identifying the token (one per group)'),
                     description: z.string().optional().describe('Optional description for the token'),
-                    ref: z
-                      .string()
-                      .describe('Default primitive ref in the format "colorId:shadeName" (e.g. "blue:500")'),
+                    ref: z.string().describe('Default primitive ref in the format "colorId:shadeName" (e.g. "blue:500")'),
                     overrides: z
                       .record(z.string(), z.string())
                       .optional()
@@ -587,16 +610,14 @@ export default {
         // ignore
       }
       regBody.token_endpoint_auth_method = 'none'
-      console.log('[register-proxy] forwarding registration:', JSON.stringify(regBody))
 
-      const supabaseRes = await fetch(`${env.OAUTH_SERVER_URL}/auth/v1/oauth/register`, {
+      const supabaseRes = await fetch(`${env.OAUTH_SERVER_URL}/auth/v1/oauth/clients/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', apikey: env.SUPABASE_ANON_KEY },
         body: JSON.stringify(regBody),
       })
 
       const responseText = await supabaseRes.text()
-      console.log('[register-proxy] supabase status:', supabaseRes.status, 'body:', responseText)
 
       return new Response(responseText, {
         status: supabaseRes.status,
@@ -606,8 +627,6 @@ export default {
 
     if (url.pathname === '/oauth/token' && request.method === 'POST') {
       const body = await request.arrayBuffer()
-      const requestBody = new TextDecoder().decode(body)
-      console.log('[token-proxy] request body:', requestBody)
 
       const supabaseRes = await fetch(`${env.OAUTH_SERVER_URL}/auth/v1/oauth/token`, {
         method: 'POST',
@@ -616,7 +635,6 @@ export default {
       })
 
       const responseText = await supabaseRes.text()
-      console.log('[token-proxy] supabase status:', supabaseRes.status, 'body:', responseText)
 
       if (!supabaseRes.ok) {
         let errBody: Record<string, unknown> = {}
@@ -643,11 +661,11 @@ export default {
     if (url.pathname === '/mcp') {
       const authHeader = request.headers.get('Authorization')
       const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
-      if (token) {
-        ;(ctx as unknown as { props: Props }).props = { accessToken: token }
-      }
 
-      return UICPMcp.serve('/mcp').fetch(request, env, ctx)
+      const ctxWithProps = Object.assign(Object.create(ctx as object), {
+        props: token ? ({ accessToken: token } satisfies Props) : undefined,
+      }) as ExecutionContext
+      return UICPMcp.serve('/mcp').fetch(request, env, ctxWithProps)
     }
 
     return new Response('Not found', { status: 404 })
