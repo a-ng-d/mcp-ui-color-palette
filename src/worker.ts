@@ -102,7 +102,8 @@ const zPreset = z.object({
 })
 
 const zColor = z.object({
-  id: z.string().min(1).describe('Unique identifier for the color (e.g. "blue", "primary")'),
+  id: z.string().optional().describe('Unique identifier for the color — generate a random 11-character lowercase hex string (e.g. "4a7f2c1e09b"). Used in refs as "colorId:shadeName" so must stay consistent within the same request'),
+
   name: z.string().min(1).describe('Display name for the color'),
   description: z.string().optional().describe('Optional description, use empty string if none'),
   rgb: zRgb,
@@ -136,7 +137,8 @@ const zBase = z.object({
 })
 
 const zTheme = z.object({
-  id: z.string().optional().describe('Theme identifier (auto-generated if omitted)'),
+  id: z.string().optional().describe('Theme identifier — generate a random 11-character lowercase hex string (e.g. "9e3d5b0f12a")'),  
+
   name: z.string().min(1).describe('Theme name (e.g. "Light", "Dark")'),
   description: z.string().optional().describe('Theme description, use empty string if none'),
   scale: z
@@ -249,12 +251,12 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
                   groups: z
                     .array(
                       z.object({
-                        id: z.string().min(1).describe('Unique identifier for the taxonomy group'),
+                        id: z.string().min(1).describe('Unique identifier for the taxonomy group — generate a random 11-character lowercase hex string (e.g. "4a7f2c1e09b")'),
                         name: z.string().min(1).describe('Display name of the group'),
                         members: z
                           .array(
                             z.object({
-                              id: z.string().min(1).describe('Unique identifier for the member'),
+                              id: z.string().min(1).describe('Unique identifier for the member — generate a random 11-character lowercase hex string (e.g. "9e3d5b0f12a"). Referenced in bindings path arrays, so must stay consistent within the same request'),
                               name: z.string().min(1).describe('Display name of the member'),
                             }),
                           )
@@ -391,12 +393,12 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
                   groups: z
                     .array(
                       z.object({
-                        id: z.string().min(1).describe('Unique identifier for the taxonomy group'),
+                        id: z.string().min(1).describe('Unique identifier for the taxonomy group — generate a random 11-character lowercase hex string (e.g. "4a7f2c1e09b")'),
                         name: z.string().min(1).describe('Display name of the group'),
                         members: z
                           .array(
                             z.object({
-                              id: z.string().min(1).describe('Unique identifier for the member'),
+                              id: z.string().min(1).describe('Unique identifier for the member — generate a random 11-character lowercase hex string (e.g. "9e3d5b0f12a"). Referenced in bindings path arrays, so must stay consistent within the same request'),
                               name: z.string().min(1).describe('Display name of the member'),
                             }),
                           )
