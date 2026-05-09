@@ -10,14 +10,14 @@ Streamable HTTP at `/mcp` (supports both SSE and Streamable HTTP transports).
 
 ### Palette Generation
 
-| Tool                          | Description                                                                                             |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `get_palette`                 | Generate a complete color palette from base and theme configurations                                    |
-| `get_color_system`            | Build a semantic color system by resolving taxonomy bindings against a generated palette                 |
-| `create_color_harmony`        | Create color harmonies (complementary, analogous, triadic, tetradic, compound, square)       |
-| `extract_dominant_colors`     | Extract dominant colors from a JPEG/PNG image URL                                                       |
+| Tool                          | Description                                                                                                                |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `get_palette`                 | Generate a complete color palette from base and theme configurations                                                       |
+| `get_color_system`            | Build a semantic color system by resolving taxonomy bindings against a generated palette                                   |
+| `create_color_harmony`        | Create color harmonies (complementary, analogous, triadic, tetradic, compound, square)                                     |
+| `extract_dominant_colors`     | Extract dominant colors from a JPEG/PNG image URL                                                                          |
 | `generate_code`               | Generate design tokens/code from base + themes (CSS, SCSS, Less, Tailwind v3/v4, SwiftUI, UIKit, Compose, CSV, DTCG, etc.) |
-| `generate_colors_from_prompt` | Generate a palette from a natural language description via AI                                           |
+| `generate_colors_from_prompt` | Generate a palette from a natural language description via AI                                                              |
 
 #### generate_code input
 
@@ -77,10 +77,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "ui-color-palette": {
       "command": "npx",
-      "args": [
-        "mcp-remote",
-        "https://mcp-uicp.<your-subdomain>.workers.dev/mcp"
-      ]
+      "args": ["mcp-remote", "https://mcp-uicp.<your-subdomain>.workers.dev/mcp"]
     }
   }
 }
@@ -96,8 +93,8 @@ npm run deploy     # Deploy to Cloudflare
 
 ### Environment Variables
 
-| Variable  | Description                                                                                       |
-| --------- | ------------------------------------------------------------------------------------------------- |
+| Variable  | Description                                                                                                            |
+| --------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `API_URL` | Base URL of the deployed [api-ui-color-palette](https://github.com/a-ng-d/api-ui-color-palette) worker (without `/v1`) |
 
 ## License
