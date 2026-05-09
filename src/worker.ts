@@ -62,34 +62,58 @@ const zRgb = z
   })
   .describe('RGB color as a normalized object {r, g, b} with values 0.0–1.0 — NOT an array, NOT 0-255 integers')
 
+const zHex = z
+  .string()
+  .regex(/^#[0-9a-fA-F]{3,8}$/, 'Must be a valid hex color string')
+  .describe('Hex color string (e.g. "#FFFFFF", "#fff", "#FF000080")')
+
+const zRef = z
+  .string()
+  .regex(/^[^:]+:[^:]+$/, 'Must be in the format "colorId:shadeName"')
+  .describe('Primitive ref in the format "colorId:shadeName" (e.g. "blue:500")')
+
 
 const zPreset = z.object({
-  id: z.string().describe('Preset identifier, e.g. "MATERIAL", "TAILWIND", "MATERIAL_3", "ANT"'),
-  name: z.string().describe('Human-readable preset name'),
+  id: z.string().min(1).describe('Preset identifier, e.g. "MATERIAL", "TAILWIND", "MATERIAL_3", "ANT"'),
+  name: z.string().min(1).describe('Human-readable preset name'),
   stops: z
-    .array(z.number())
-    .describe('Ordered list of shade stops as numbers, e.g. [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]'),
-  min: z.number().describe('Minimum lightness percentage for the scale (e.g. 24)'),
-  max: z.number().describe('Maximum lightness percentage for the scale (e.g. 96)'),
+    .array(z.number().int().min(0))
+    .min(1)
+    .describe('Ordered list of shade stops as positive integers, e.g. [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]'),
+  min: z.number().min(0).max(100).describe('Minimum lightness percentage for the scale, 0–100 (e.g. 24)'),
+  max: z.number().min(0).max(100).describe('Maximum lightness percentage for the scale, 0–100 (e.g. 96)'),
+
   easing: z
-    .enum(['NONE', 'LINEAR', 'EASEIN_SINE', 'EASEOUT_SINE', 'EASEINOUT_SINE', 'EASEIN_QUAD', 'EASEOUT_QUAD', 'EASEINOUT_QUAD', 'EASEIN_CUBIC', 'EASEOUT_CUBIC', 'EASEINOUT_CUBIC'])
+    .enum([
+      'NONE',
+      'LINEAR',
+      'EASEIN_SINE',
+      'EASEOUT_SINE',
+      'EASEINOUT_SINE',
+      'EASEIN_QUAD',
+      'EASEOUT_QUAD',
+      'EASEINOUT_QUAD',
+      'EASEIN_CUBIC',
+      'EASEOUT_CUBIC',
+      'EASEINOUT_CUBIC',
+    ])
     .describe('Easing curve applied to lightness distribution across stops'),
   family: z.string().optional().describe('Optional preset family label (e.g. "Google", "Framework")'),
 })
 
 const zColor = z.object({
-  id: z.string().describe('Unique identifier for the color (e.g. "blue", "primary")'),
-  name: z.string().describe('Display name for the color'),
+  id: z.string().min(1).describe('Unique identifier for the color (e.g. "blue", "primary")'),
+  name: z.string().min(1).describe('Display name for the color'),
   description: z.string().optional().describe('Optional description, use empty string if none'),
   rgb: zRgb,
   hue: z
-    .object({ shift: z.number(), isLocked: z.boolean() })
-    .describe('Hue shift — use {shift: 0, isLocked: false} for no adjustment'),
+    .object({ shift: z.number().min(-360).max(360), isLocked: z.boolean() })
+    .describe('Hue shift in degrees (−360–360) — use {shift: 0, isLocked: false} for no adjustment'),
   chroma: z
-    .object({ shift: z.number(), isLocked: z.boolean() })
-    .describe('Chroma/saturation shift — use {shift: 0, isLocked: false} for no adjustment'),
+    .object({ shift: z.number().min(-100).max(100), isLocked: z.boolean() })
+    .describe('Chroma/saturation shift (−100–100) — use {shift: 0, isLocked: false} for no adjustment'),
   alpha: z
-    .object({ isEnabled: z.boolean(), backgroundColor: z.string() })
+    .object({ isEnabled: z.boolean(), backgroundColor: zHex })
     .describe('Alpha config — use {isEnabled: false, backgroundColor: "#FFFFFF"} unless transparency is needed'),
 })
 
@@ -104,34 +128,44 @@ const zBase = z.object({
     })
     .describe('Global shift adjustments (use {chroma: 0, hue: 0} for no shift)'),
   areSourceColorsLocked: z.boolean().optional().describe('Whether source colors are locked (default: false)'),
-  colors: z.array(zColor).describe('Source colors to generate shades from'),
+  colors: z.array(zColor).min(1).describe('Source colors to generate shades from (at least one required)'),
   colorSpace: z
     .enum(['LCH', 'OKLCH', 'LAB', 'OKLAB', 'HSL', 'HSLUV', 'HSV', 'CMYK', 'RGB', 'HEX', 'P3'])
-    .describe('Color space used for shade interpolation (default: "LCH")'),  
+    .describe('Color space used for shade interpolation (default: "LCH")'),
   algorithmVersion: z.enum(['v1', 'v2', 'v3']).describe('Algorithm version (use "v3" for best results)'),
 })
 
 const zTheme = z.object({
   id: z.string().optional().describe('Theme identifier (auto-generated if omitted)'),
-  name: z.string().describe('Theme name (e.g. "Light", "Dark")'),
+  name: z.string().min(1).describe('Theme name (e.g. "Light", "Dark")'),
   description: z.string().optional().describe('Theme description, use empty string if none'),
   scale: z
-    .record(z.string(), z.number())
+    .record(z.string(), z.number().min(0).max(100))
     .optional()
     .describe(
       'Lightness scale: maps each stop name (string) to a lightness percentage (number). ' +
-      'If omitted, a linear scale is auto-generated from the preset stops/min/max. ' +
-      'Example for MATERIAL: {"50": 96, "100": 88, "200": 80, "300": 70, "400": 60, "500": 50, "600": 41, "700": 33, "800": 26, "900": 24}.',
+        'If omitted, a linear scale is auto-generated from the preset stops/min/max. ' +
+        'Example for MATERIAL: {"50": 96, "100": 88, "200": 80, "300": 70, "400": 60, "500": 50, "600": 41, "700": 33, "800": 26, "900": 24}.',
     ),
   visionSimulationMode: z
-    .enum(['NONE', 'PROTANOMALY', 'PROTANOPIA', 'DEUTERANOMALY', 'DEUTERANOPIA', 'TRITANOMALY', 'TRITANOPIA', 'ACHROMATOMALY', 'ACHROMATOPSIA'])
+    .enum([
+      'NONE',
+      'PROTANOMALY',
+      'PROTANOPIA',
+      'DEUTERANOMALY',
+      'DEUTERANOPIA',
+      'TRITANOMALY',
+      'TRITANOPIA',
+      'ACHROMATOMALY',
+      'ACHROMATOPSIA',
+    ])
     .optional()
     .describe('Color vision deficiency simulation — use "NONE" unless specifically needed'),
   textColorsTheme: z
-    .object({ lightColor: z.string(), darkColor: z.string() })
+    .object({ lightColor: zHex, darkColor: zHex })
     .optional()
     .describe('Text colors used for contrast display — use {lightColor: "#FFFFFF", darkColor: "#000000"} by default'),
-  paletteBackground: z.string().optional().describe('Hex background color for the palette canvas — use "#FFFFFF" by default'),
+  paletteBackground: zHex.optional().describe('Hex background color for the palette canvas — use "#FFFFFF" by default'),
   isEnabled: z.boolean().optional().describe('Whether this theme is active — use true'),
   type: z.enum(['default theme', 'custom theme']).optional().describe('Theme type — use "default theme" unless it is a custom override'),
 })
@@ -191,7 +225,7 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
         },
         inputSchema: {
           base: zBase,
-          themes: z.array(zTheme).describe('Array of theme configurations (light and/or dark modes)'),
+          themes: z.array(zTheme).min(1).describe('Array of theme configurations (at least one required, e.g. a "Light" default theme)'),
         },
       },
       async ({ base, themes }) => apiCall(apiUrl, '/get-palette', { body: { base, themes } }),
@@ -207,7 +241,7 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
         },
         inputSchema: {
           base: zBase,
-          themes: z.array(zTheme).describe('Array of theme configurations (light and/or dark modes)'),
+          themes: z.array(zTheme).min(1).describe('Array of theme configurations (at least one required, e.g. a "Light" default theme)'),
           system: z
             .object({
               schema: z
@@ -215,29 +249,34 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
                   groups: z
                     .array(
                       z.object({
-                        id: z.string().describe('Unique identifier for the taxonomy group'),
-                        name: z.string().describe('Display name of the group'),
+                        id: z.string().min(1).describe('Unique identifier for the taxonomy group'),
+                        name: z.string().min(1).describe('Display name of the group'),
                         members: z
                           .array(
                             z.object({
-                              id: z.string().describe('Unique identifier for the member'),
-                              name: z.string().describe('Display name of the member'),
+                              id: z.string().min(1).describe('Unique identifier for the member'),
+                              name: z.string().min(1).describe('Display name of the member'),
                             }),
                           )
-                          .describe('Members belonging to this group'),
+                          .min(1)
+                          .describe('Members belonging to this group (at least one required)'),
                       }),
                     )
-                    .describe('Taxonomy groups that form the cartesian product of semantic token paths'),
+                    .min(1)
+                    .describe('Taxonomy groups that form the cartesian product of semantic token paths (at least one required)'),
                 })
                 .describe('Taxonomy schema defining the structure of the color system'),
               bindings: z
                 .array(
                   z.object({
-                    path: z.array(z.string()).describe('Ordered member ids identifying the token (one per group)'),
+                    path: z
+                      .array(z.string().min(1))
+                      .min(1)
+                      .describe('Ordered member ids identifying the token (one per group, at least one)'),
                     description: z.string().optional().describe('Optional description for the token'),
-                    ref: z.string().describe('Default primitive ref in the format "colorId:shadeName" (e.g. "blue:500")'),
+                    ref: zRef.describe('Default primitive ref in the format "colorId:shadeName" (e.g. "blue:500")'),
                     overrides: z
-                      .record(z.string(), z.string())
+                      .record(z.string(), zRef)
                       .optional()
                       .describe('Per-theme overrides mapping themeId to a different "colorId:shadeName" ref'),
                     isExcluded: z
@@ -264,15 +303,20 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
         },
         inputSchema: {
           baseColor: z
-            .tuple([z.number(), z.number(), z.number()])
-            .describe('The base color as an RGB Channel tuple [r, g, b] with values 0–255'),
+            .tuple([z.number().int().min(0).max(255), z.number().int().min(0).max(255), z.number().int().min(0).max(255)])
+            .describe('The base color as an RGB tuple [r, g, b] with integer values 0–255'),
 
-          analogousSpread: z.number().optional().describe('Spread angle in degrees for analogous harmonies'),
+          analogousSpread: z
+            .number()
+            .min(0)
+            .max(180)
+            .optional()
+            .describe('Spread angle in degrees for analogous harmonies (default: 30, range: 0–180)'),
           returnFormat: z.enum(['rgb', 'hex', 'both']).optional().describe('Return format for generated colors (default: both)'),
           type: z
             .enum(['ALL', 'COMPLEMENTARY', 'ANALOGOUS', 'TRIADIC', 'TETRADIC', 'SQUARE', 'COMPOUND'])
             .optional()
-            .describe('Specific harmony type to generate, or "ALL" for all harmony types'),
+            .describe('Specific harmony type to generate, or "ALL" for all harmony types (default: ALL)'),
         },
       },
       async (args) => apiCall(apiUrl, '/create-color-harmony', { body: args }),
@@ -286,11 +330,22 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           readOnlyHint: true,
         },
         inputSchema: {
-          imageUrl: z.string().describe('Public URL of the JPEG or PNG image to extract colors from'),
-          colorCount: z.number().optional().describe('Number of dominant colors to extract'),
-          maxIterations: z.number().optional().describe('Maximum iterations for k-means clustering'),
-          tolerance: z.number().optional().describe('Convergence tolerance for clustering'),
-          skipTransparent: z.boolean().optional().describe('Whether to skip transparent pixels'),
+          imageUrl: z.string().url().describe('Publicly accessible URL of a JPEG or PNG image to extract colors from'),
+          colorCount: z.number().int().min(1).max(16).optional().describe('Number of dominant colors to extract (default: 5, range: 1–16)'),
+          maxIterations: z
+            .number()
+            .int()
+            .min(1)
+            .max(500)
+            .optional()
+            .describe('Maximum iterations for k-means clustering (default: 50, range: 1–500)'),
+          tolerance: z
+            .number()
+            .min(0)
+            .max(100)
+            .optional()
+            .describe('Convergence tolerance for clustering — lower = more precise, higher = faster (default: 1, range: 0–100)'),
+          skipTransparent: z.boolean().optional().describe('Whether to skip transparent pixels when extracting colors (default: true)'),
         },
       },
       async (args) => apiCall(apiUrl, '/extract-dominant-colors', { body: args }),
@@ -305,7 +360,7 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
         },
         inputSchema: {
           base: zBase,
-          themes: z.array(zTheme).describe('Array of theme configurations (light and/or dark modes)'),
+          themes: z.array(zTheme).min(1).describe('Array of theme configurations (at least one required, e.g. a "Light" default theme)'),
           format: z
             .enum([
               'css',
@@ -336,29 +391,34 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
                   groups: z
                     .array(
                       z.object({
-                        id: z.string().describe('Unique identifier for the taxonomy group'),
-                        name: z.string().describe('Display name of the group'),
+                        id: z.string().min(1).describe('Unique identifier for the taxonomy group'),
+                        name: z.string().min(1).describe('Display name of the group'),
                         members: z
                           .array(
                             z.object({
-                              id: z.string().describe('Unique identifier for the member'),
-                              name: z.string().describe('Display name of the member'),
+                              id: z.string().min(1).describe('Unique identifier for the member'),
+                              name: z.string().min(1).describe('Display name of the member'),
                             }),
                           )
-                          .describe('Members belonging to this group'),
+                          .min(1)
+                          .describe('Members belonging to this group (at least one required)'),
                       }),
                     )
-                    .describe('Taxonomy groups forming the cartesian product of semantic token paths'),
+                    .min(1)
+                    .describe('Taxonomy groups forming the cartesian product of semantic token paths (at least one required)'),
                 })
                 .describe('Taxonomy schema defining the structure of the color system'),
               bindings: z
                 .array(
                   z.object({
-                    path: z.array(z.string()).describe('Ordered member ids identifying the token (one per group)'),
+                    path: z
+                      .array(z.string().min(1))
+                      .min(1)
+                      .describe('Ordered member ids identifying the token (one per group, at least one)'),
                     description: z.string().optional().describe('Optional description for the token'),
-                    ref: z.string().describe('Default primitive ref in the format "colorId:shadeName" (e.g. "blue:500")'),
+                    ref: zRef.describe('Default primitive ref in the format "colorId:shadeName" (e.g. "blue:500")'),
                     overrides: z
-                      .record(z.string(), z.string())
+                      .record(z.string(), zRef)
                       .optional()
                       .describe('Per-theme overrides mapping themeId to a different "colorId:shadeName" ref'),
                     isExcluded: z
@@ -389,7 +449,12 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
         inputSchema: {
           prompt: z
             .string()
-            .describe('Natural language description of the desired color palette (e.g. "a warm sunset palette with oranges and pinks")'),
+            .min(1)
+            .max(500)
+            .trim()
+            .describe(
+              'Natural language description of the desired color palette, max 500 characters (e.g. "a warm sunset palette with oranges and pinks")',
+            ),
         },
       },
       async ({ prompt }) => apiCall(apiUrl, '/generate-colors-from-prompts', { body: { prompt } }),
@@ -454,15 +519,22 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
           idempotentHint: false,
         },
         inputSchema: {
-          name: z.string().describe('Name of the palette'),
+          name: z.string().min(1).describe('Name of the palette'),
           description: z.string().optional().describe('Optional description of the palette'),
-          preset: z.record(z.string(), z.unknown()).describe('Preset configuration used by the palette'),
-          shift: z.record(z.string(), z.unknown()).describe('Shift configuration for color adjustments'),
-          are_source_colors_locked: z.boolean().describe('Whether the source colors are locked from modification'),
-          colors: z.array(z.record(z.string(), z.unknown())).describe('Array of source color definitions'),
-          themes: z.array(z.record(z.string(), z.unknown())).describe('Array of theme configurations'),
-          color_space: z.string().describe('Color space used for the palette'),
-          algorithm_version: z.string().describe('Version of the palette generation algorithm'),
+          preset: zPreset,
+          shift: z
+            .object({
+              chroma: z.number().describe('Global chroma/saturation shift applied to all colors'),
+              hue: z.number().describe('Global hue shift applied to all colors'),
+            })
+            .describe('Global shift adjustments (use {chroma: 0, hue: 0} for no shift)'),
+          are_source_colors_locked: z.boolean().optional().describe('Whether source colors are locked (default: false)'),
+          colors: z.array(zColor).min(1).describe('Source colors to generate shades from (at least one required)'),
+          themes: z.array(zTheme).min(1).describe('Array of theme configurations (at least one required, e.g. a "Light" default theme)'),
+          color_space: z
+            .enum(['LCH', 'OKLCH', 'LAB', 'OKLAB', 'HSL', 'HSLUV', 'HSV', 'CMYK', 'RGB', 'HEX', 'P3'])
+            .describe('Color space used for shade interpolation (default: "LCH")'),
+          algorithm_version: z.enum(['v1', 'v2', 'v3']).describe('Algorithm version (use "v3" for best results)'),
           is_shared: z.boolean().optional().describe('Whether the palette is publicly visible (default: false)'),
         },
       },
