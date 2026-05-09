@@ -221,16 +221,22 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
       'get_palette',
       {
         description:
-          'Generate a complete color palette from base configuration and theme configurations. Returns a PaletteData object with all color scales.',
+          'Generate a complete color palette from base configuration and theme configurations. Returns a flat array of shade rows by default (compact mode).\n\nBy default (`compact: true`), returns a flat array — one object per shade — with only `theme`, `color`, `shade`, `hex`, `contrast`, and `textContrast`. This is the preferred format for all agent tasks (audit, preview, design handoff, summaries).\n\nSet `compact: false` only when raw color space values (rgb, lch, oklch, hsl, etc.) are explicitly required.',
         annotations: {
           readOnlyHint: true,
         },
         inputSchema: {
           base: zBase,
           themes: z.array(zTheme).min(1).describe('Array of theme configurations (at least one required, e.g. a "Light" default theme)'),
+          compact: z
+            .boolean()
+            .optional()
+            .describe(
+              'When true (default), returns a flat array of shade rows with only `theme`, `color`, `shade`, `hex`, `contrast`, and `textContrast`. All raw color space values (rgb, gl, lch, oklch, lab, oklab, hsl, hsluv, hsv, cmyk) are omitted. Set to false only when raw color values are explicitly needed.',
+            ),
         },
       },
-      async ({ base, themes }) => apiCall(apiUrl, '/get-palette', { body: { base, themes } }),
+      async ({ base, themes, compact }) => apiCall(apiUrl, '/get-palette', { body: { base, themes, compact: compact ?? true } }),
     )
 
     this.server.registerTool(
