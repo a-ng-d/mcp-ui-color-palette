@@ -172,7 +172,7 @@ export class UICPMcp extends McpAgent<Env, unknown, Props> {
       this._accessToken = token
       await this.ctx.storage.put('accessToken', token)
     }
-    return super.onConnect(conn as Parameters<typeof super.onConnect>[0], connCtx)
+    return super.onConnect(conn as never, connCtx)
   }
 
   async init() {
