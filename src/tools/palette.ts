@@ -171,4 +171,57 @@ export const registerPaletteTools = (server: McpServer, apiUrl: string): void =>
     },
     async ({ prompt }) => apiCall(apiUrl, '/generate-colors-from-prompts', { body: { prompt } }),
   )
+
+  server.registerTool(
+    'preview_palette',
+    {
+      description:
+        'Build a preview image URL for a compact palette and return it as a markdown image link. Call this after get_palette (compact: true) to give the user an instant visual preview. The link renders as an inline image in all major chat UIs (ChatGPT, Mistral, Claude, etc.).',
+      annotations: {
+        readOnlyHint: true,
+      },
+      inputSchema: {
+        cells: z
+          .array(
+            z.object({
+              theme: z.string().describe('Theme name'),
+              color: z.string().describe('Color name'),
+              shade: z.string().describe('Shade name (e.g. "500")'),
+              hex: z.string().describe('Hex color value (e.g. "#1a2b3c")'),
+            }),
+          )
+          .min(1)
+          .describe(
+            'Compact palette cells from get_palette (compact: true). Each cell is one shade of one color in one theme. Only theme, color, shade, and hex fields are used — all other fields are ignored.',
+          ),
+      },
+    },
+    ({ cells }) => {
+      // Compact format: `<theme>~<color>~<shade>:<hex6>,<shade>:<hex6>;...|-theme2~...`
+      const byTheme = new Map<string, Map<string, Array<{ shade: string; hex: string }>>>()
+      for (const { theme, color, shade, hex } of cells) {
+        if (!byTheme.has(theme)) byTheme.set(theme, new Map())
+        const byColor = byTheme.get(theme)!
+        if (!byColor.has(color)) byColor.set(color, [])
+        byColor.get(color)!.push({ shade, hex: hex.replace(/^#/, '') })
+      }
+      const data = [...byTheme.entries()]
+        .map(
+          ([theme, byColor]) =>
+            `${encodeURIComponent(theme)}~` +
+            [...byColor.entries()]
+              .map(
+                ([color, shades]) =>
+                  `${encodeURIComponent(color)}~` +
+                  shades.map(({ shade, hex }) => `${encodeURIComponent(shade)}:${hex}`).join(','),
+              )
+              .join(';'),
+        )
+        .join('|')
+      const url = `${apiUrl}/v1/preview?data=${data}`
+      return {
+        content: [{ type: 'text' as const, text: `![palette preview](${url})` }],
+      }
+    },
+  )
 }
