@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { apiCall } from '../helpers'
 import { zBase, zTheme, zSystemSchema, zBindings } from '../schemas'
 
-export function registerPaletteTools(server: McpServer, apiUrl: string): void {
+export const registerPaletteTools = (server: McpServer, apiUrl: string): void => {
   server.registerTool(
     'get_palette',
     {

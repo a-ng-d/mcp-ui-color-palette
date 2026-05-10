@@ -1,7 +1,7 @@
 export type AuthErrorResult = { content: Array<{ type: 'text'; text: string }>; isError: true }
 export type ApiCallResult = { content: Array<{ type: 'text'; text: string }>; isError?: boolean }
 
-export function requireAuth(token: string | undefined): AuthErrorResult | null {
+export const requireAuth = (token: string | undefined): AuthErrorResult | null => {
   if (token) return null
   return {
     content: [
@@ -14,11 +14,11 @@ export function requireAuth(token: string | undefined): AuthErrorResult | null {
   }
 }
 
-export async function apiCall(
+export const apiCall = async (
   apiUrl: string,
   path: string,
   options: { method?: string; body?: unknown; token?: string; params?: URLSearchParams } = {},
-): Promise<ApiCallResult> {
+): Promise<ApiCallResult> => {
   const { method = 'POST', body, token, params } = options
   const versionedPath = path.startsWith('/v1') ? path : `/v1${path.startsWith('/') ? path : `/${path}`}`
   const url = params ? `${apiUrl}${versionedPath}?${params}` : `${apiUrl}${versionedPath}`

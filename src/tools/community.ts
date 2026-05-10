@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { apiCall, requireAuth } from '../helpers'
 import { zPreset, zColor, zTheme } from '../schemas'
 
-export function registerCommunityTools(server: McpServer, apiUrl: string, getToken: () => string | undefined): void {
+export const registerCommunityTools = (server: McpServer, apiUrl: string, getToken: () => string | undefined): void => {
   server.registerTool(
     'list_published_palettes',
     {
