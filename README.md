@@ -1,3 +1,5 @@
+![GitHub package.json version](https://img.shields.io/github/package-json/v/a-ng-d/mcp-ui-color-palette?color=informational) ![GitHub last commit](https://img.shields.io/github/last-commit/a-ng-d/mcp-ui-color-palette?color=informational) ![GitHub](https://img.shields.io/github/license/a-ng-d/mcp-ui-color-palette?color=informational) ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?logo=cloudflare&logoColor=white) ![Worker status](https://img.shields.io/website?url=https%3A%2F%2Fmcp-uicp.yelbolt.workers.dev%2Fmcp&label=status&up_message=online&down_message=offline)
+
 # UI Color Palette MCP Server
 
 A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server built on Cloudflare Workers using the [Agents SDK](https://developers.cloudflare.com/agents/) (`McpAgent` + Durable Objects) that exposes the UI Color Palette API as tools for AI agents and LLMs.
