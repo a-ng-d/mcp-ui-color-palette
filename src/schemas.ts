@@ -60,8 +60,8 @@ export const zColor = z.object({
     .object({ shift: z.number().min(-360).max(360), isLocked: z.boolean() })
     .describe('Hue shift in degrees (−360–360) — use {shift: 0, isLocked: false} for no adjustment'),
   chroma: z
-    .object({ shift: z.number().min(-100).max(100), isLocked: z.boolean() })
-    .describe('Chroma/saturation shift (−100–100) — use {shift: 0, isLocked: false} for no adjustment'),
+    .object({ chroma: z.number().min(-100).max(100), isLocked: z.boolean() })
+    .describe('Chroma/saturation shift (−100–100) — use {chroma: 100, isLocked: false} for no adjustment'),
   alpha: z
     .object({ isEnabled: z.boolean(), backgroundColor: zHex })
     .describe('Alpha config — use {isEnabled: false, backgroundColor: "#FFFFFF"} unless transparency is needed'),
@@ -76,7 +76,7 @@ export const zBase = z.object({
       chroma: z.number().describe('Global chroma/saturation shift applied to all colors'),
       hue: z.number().describe('Global hue shift applied to all colors'),
     })
-    .describe('Global shift adjustments (use {chroma: 0, hue: 0} for no shift)'),
+    .describe('Global shift adjustments (use {chroma: 100, hue: 0} for no shift)'),
   areSourceColorsLocked: z.boolean().optional().describe('Whether source colors are locked (default: false)'),
   colors: z.array(zColor).min(1).describe('Source colors to generate shades from (at least one required)'),
   colorSpace: z
@@ -86,8 +86,13 @@ export const zBase = z.object({
 })
 
 export const zTheme = z.object({
-  id: z.string().optional().describe('Theme identifier — generate a random 11-character lowercase hex string (e.g. "9e3d5b0f12a")'),
-  name: z.string().min(1).describe('Theme name (e.g. "Light", "Dark")'),
+  id: z
+    .string()
+    .optional()
+    .describe(
+      'Theme identifier — generate a random 11-character lowercase hex string (e.g. "9e3d5b0f12a"), use "00000000000" for the default theme if applicable',
+    ),
+  name: z.string().min(1).describe('Theme name (e.g. "Light", "Dark"), use "None" if not applicable'),
   description: z.string().optional().describe('Theme description, use empty string if none'),
   scale: z
     .record(z.string(), z.number().min(0).max(100))
@@ -95,7 +100,7 @@ export const zTheme = z.object({
     .describe(
       'Lightness scale: maps each stop name (string) to a lightness percentage (number). ' +
         'If omitted, a linear scale is auto-generated from the preset stops/min/max. ' +
-        'Example for MATERIAL: {"50": 96, "100": 88, "200": 80, "300": 70, "400": 60, "500": 50, "600": 41, "700": 33, "800": 26, "900": 24}.',
+        'Example for CUSTOM_10_100: {"10": 90, "20": 74, "30": 58, "40": 42, "50": 26, "60": 10}.',
     ),
   visionSimulationMode: z
     .enum([
