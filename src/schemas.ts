@@ -19,15 +19,60 @@ export const zRef = z
   .regex(/^[^:]+:[^:]+$/, 'Must be in the format "colorId:shadeName"')
   .describe('Primitive ref in the format "colorId:shadeName" (e.g. "blue:500")')
 
+export const zPresetId = z.enum([
+  'CUSTOM_1_10',
+  'CUSTOM_10_100',
+  'CUSTOM_100_1000',
+  'MATERIAL',
+  'MATERIAL_3',
+  'TAILWIND',
+  'ANT',
+  'BOOTSTRAP',
+  'RADIX',
+  'UNTITLED_UI',
+  'OPEN_COLOR',
+  'ADS',
+  'ADS_NEUTRAL',
+  'SPECTRUM',
+  'SPECTRUM_NEUTRAL',
+  'CARBON',
+  'BASE',
+  'POLARIS',
+  'FLUENT',
+]).describe(
+  'Preset identifier — must be one of the supported values. ' +
+  'Each preset carries canonical stops, min, max, and easing values. ' +
+  'Use those canonical values when building the preset object:\n' +
+  '  CUSTOM_1_10:       stops [1-6],          min 10, max 90,  easing LINEAR\n' +
+  '  CUSTOM_10_100:     stops [10-60],         min 10, max 90,  easing LINEAR\n' +
+  '  CUSTOM_100_1000:   stops [100-600],       min 10, max 90,  easing LINEAR\n' +
+  '  MATERIAL:          stops [50,100-900],    min 24, max 96,  easing LINEAR\n' +
+  '  MATERIAL_3:        stops [100,99,95,90,80,70,60,50,40,30,20,10,0], min 0, max 100, easing NONE\n' +
+  '  TAILWIND:          stops [50,100-900,950], min 16, max 96, easing LINEAR\n' +
+  '  ANT:               stops [1-10],          min 24, max 96,  easing LINEAR\n' +
+  '  BOOTSTRAP:         stops [100-900],       min 15, max 95,  easing LINEAR\n' +
+  '  RADIX:             stops [1-12],          min 5,  max 95,  easing LINEAR\n' +
+  '  UNTITLED_UI:       stops [25,50,100-900,950], min 5, max 100, easing LINEAR\n' +
+  '  OPEN_COLOR:        stops [0-9],           min 15, max 100, easing LINEAR\n' +
+  '  ADS:               stops [100-1000],      min 24, max 96,  easing LINEAR\n' +
+  '  ADS_NEUTRAL:       stops [0,100-1100],    min 8,  max 100, easing LINEAR\n' +
+  '  SPECTRUM:          stops [100-1300],      min 16, max 96,  easing LINEAR\n' +
+  '  SPECTRUM_NEUTRAL:  stops [50,75,100-900], min 0,  max 100, easing LINEAR\n' +
+  '  CARBON:            stops [10-100 by 10],  min 24, max 96,  easing LINEAR\n' +
+  '  BASE:              stops [50,100-700],    min 24, max 96,  easing LINEAR\n' +
+  '  POLARIS:           stops [1-16],          min 16, max 100, easing EASEOUT_QUAD\n' +
+  '  FLUENT:            stops [10-160 by 10],  min 10, max 90,  easing LINEAR'
+)
+
 export const zPreset = z.object({
-  id: z.string().min(1).describe('Preset identifier, e.g. "MATERIAL", "TAILWIND", "MATERIAL_3", "ANT"'),
-  name: z.string().min(1).describe('Human-readable preset name'),
+  id: zPresetId,
+  name: z.string().min(1).describe('Human-readable preset name matching the chosen id'),
   stops: z
     .array(z.number().int().min(0))
     .min(1)
-    .describe('Ordered list of shade stops as positive integers, e.g. [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]'),
-  min: z.number().min(0).max(100).describe('Minimum lightness percentage for the scale, 0–100 (e.g. 24)'),
-  max: z.number().min(0).max(100).describe('Maximum lightness percentage for the scale, 0–100 (e.g. 96)'),
+    .describe('Ordered list of shade stops — must match the canonical stops for the chosen id (see id description)'),
+  min: z.number().min(0).max(100).describe('Minimum lightness percentage — must match the canonical min for the chosen id (see id description)'),
+  max: z.number().min(0).max(100).describe('Maximum lightness percentage — must match the canonical max for the chosen id (see id description)'),
   easing: z
     .enum([
       'NONE',
@@ -42,7 +87,7 @@ export const zPreset = z.object({
       'EASEOUT_CUBIC',
       'EASEINOUT_CUBIC',
     ])
-    .describe('Easing curve applied to lightness distribution across stops'),
+    .describe('Easing curve — must match the canonical easing for the chosen id (see id description)'),
   family: z.string().optional().describe('Optional preset family label (e.g. "Google", "Framework")'),
 })
 
