@@ -9,6 +9,7 @@ export const registerCommunityTools = (server: McpServer, apiUrl: string, getTok
     {
       description: 'List publicly shared color palettes from the community',
       annotations: {
+        title: 'List Published Palettes',
         readOnlyHint: true,
       },
       inputSchema: {
@@ -35,6 +36,7 @@ export const registerCommunityTools = (server: McpServer, apiUrl: string, getTok
     {
       description: "List the authenticated user's own published palettes",
       annotations: {
+        title: 'List My Published Palettes',
         readOnlyHint: true,
       },
       inputSchema: {
@@ -64,6 +66,7 @@ export const registerCommunityTools = (server: McpServer, apiUrl: string, getTok
     {
       description: 'Publish a new color palette to the database',
       annotations: {
+        title: 'Publish Palette',
         readOnlyHint: false,
         destructiveHint: false,
         idempotentHint: false,
@@ -101,6 +104,7 @@ export const registerCommunityTools = (server: McpServer, apiUrl: string, getTok
     {
       description: 'Get a specific publicly shared palette by its ID',
       annotations: {
+        title: 'Get Published Palette',
         readOnlyHint: true,
       },
       inputSchema: {
@@ -115,6 +119,7 @@ export const registerCommunityTools = (server: McpServer, apiUrl: string, getTok
     {
       description: 'Make a published palette publicly visible to the community',
       annotations: {
+        title: 'Share Palette',
         readOnlyHint: false,
         destructiveHint: false,
         idempotentHint: true,
@@ -136,6 +141,7 @@ export const registerCommunityTools = (server: McpServer, apiUrl: string, getTok
     {
       description: 'Permanently delete a published palette from the database',
       annotations: {
+        title: 'Delete Palette',
         readOnlyHint: false,
         destructiveHint: true,
         idempotentHint: true,
@@ -157,6 +163,7 @@ export const registerCommunityTools = (server: McpServer, apiUrl: string, getTok
     {
       description: 'Make a published palette private (removes it from the public community listing)',
       annotations: {
+        title: 'Unshare Palette',
         readOnlyHint: false,
         destructiveHint: false,
         idempotentHint: true,
@@ -178,6 +185,7 @@ export const registerCommunityTools = (server: McpServer, apiUrl: string, getTok
     {
       description: 'Update an existing published palette with new data',
       annotations: {
+        title: 'Update Published Palette',
         readOnlyHint: false,
         destructiveHint: false,
         idempotentHint: true,

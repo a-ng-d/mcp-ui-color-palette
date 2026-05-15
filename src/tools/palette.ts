@@ -10,6 +10,7 @@ export const registerPaletteTools = (server: McpServer, apiUrl: string): void =>
       description:
         'Generate a complete color palette from base configuration and theme configurations. Returns a flat array of shade rows by default (compact mode).\n\nBy default (`compact: true`), returns a flat array — one object per shade — with only `theme`, `color`, `shade`, `hex`, `contrast`, and `textContrast`. This is the preferred format for all agent tasks (audit, preview, design handoff, summaries).\n\nSet `compact: false` only when raw color space values (rgb, lch, oklch, hsl, etc.) are explicitly required.',
       annotations: {
+        title: 'Generate Color Palette',
         readOnlyHint: true,
       },
       inputSchema: {
@@ -32,6 +33,7 @@ export const registerPaletteTools = (server: McpServer, apiUrl: string): void =>
       description:
         'Build a semantic color system (SystemData) by resolving taxonomy bindings against a generated palette. Returns a SystemData object with all tokens and their per-theme primitive refs.',
       annotations: {
+        title: 'Build Color System',
         readOnlyHint: true,
       },
       inputSchema: {
@@ -53,6 +55,7 @@ export const registerPaletteTools = (server: McpServer, apiUrl: string): void =>
     {
       description: 'Create color harmonies (complementary, analogous, triadic, tetradic, compound, square) from a base color',
       annotations: {
+        title: 'Create Color Harmony',
         readOnlyHint: true,
       },
       inputSchema: {
@@ -80,6 +83,7 @@ export const registerPaletteTools = (server: McpServer, apiUrl: string): void =>
     {
       description: 'Extract the dominant colors from an image using k-means clustering. Supports JPEG and PNG images.',
       annotations: {
+        title: 'Extract Dominant Colors',
         readOnlyHint: true,
       },
       inputSchema: {
@@ -109,6 +113,7 @@ export const registerPaletteTools = (server: McpServer, apiUrl: string): void =>
     {
       description: 'Generate code tokens or design system variables from base and theme configurations in various formats',
       annotations: {
+        title: 'Generate Design Tokens',
         readOnlyHint: true,
       },
       inputSchema: {
@@ -156,6 +161,7 @@ export const registerPaletteTools = (server: McpServer, apiUrl: string): void =>
     {
       description: 'Generate a color palette from a natural language description using AI (Mistral)',
       annotations: {
+        title: 'Generate Colors from Prompt',
         readOnlyHint: true,
       },
       inputSchema: {
@@ -178,6 +184,7 @@ export const registerPaletteTools = (server: McpServer, apiUrl: string): void =>
       description:
         'Build a preview image URL for a compact palette and return it as a markdown image link. Call this after get_palette (compact: true) to give the user an instant visual preview. The link renders as an inline image in all major chat UIs (ChatGPT, Mistral, Claude, etc.).',
       annotations: {
+        title: 'Preview Palette',
         readOnlyHint: true,
       },
       inputSchema: {
