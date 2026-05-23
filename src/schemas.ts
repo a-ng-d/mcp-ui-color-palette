@@ -105,8 +105,8 @@ export const zColor = z.object({
     .object({ shift: z.number().min(-360).max(360), isLocked: z.boolean() })
     .describe('Hue shift in degrees (−360–360) — use {shift: 0, isLocked: false} for no adjustment'),
   chroma: z
-    .object({ chroma: z.number().min(-100).max(100), isLocked: z.boolean() })
-    .describe('Chroma/saturation shift (−100–100) — use {chroma: 100, isLocked: false} for no adjustment'),
+    .object({ shift: z.number().min(0).max(200), isLocked: z.boolean() })
+    .describe('Chroma/saturation shift (0–200) — use {shift: 100, isLocked: false} for no adjustment'),
   alpha: z
     .object({ isEnabled: z.boolean(), backgroundColor: zHex })
     .describe('Alpha config — use {isEnabled: false, backgroundColor: "#FFFFFF"} unless transparency is needed'),
@@ -118,8 +118,16 @@ export const zBase = z.object({
   preset: zPreset,
   shift: z
     .object({
-      chroma: z.number().describe('Global chroma/saturation shift applied to all colors'),
-      hue: z.number().describe('Global hue shift applied to all colors'),
+      chroma: z
+        .number()
+        .min(0)
+        .max(200)
+        .describe('Global chroma/saturation shift applied to all colors - Chroma/saturation shift (0–200) - use 100 for no shift'),
+      hue: z
+        .number()
+        .min(-360)
+        .max(360)
+        .describe('Global hue shift applied to all colors - Hue shift in degrees (−360–360) - use 0 for no shift'),
     })
     .describe('Global shift adjustments (use {chroma: 100, hue: 0} for no shift)'),
   areSourceColorsLocked: z.boolean().optional().describe('Whether source colors are locked (default: false)'),
