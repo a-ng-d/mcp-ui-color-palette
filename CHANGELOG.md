@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2026-05-23
+
+### Fixed
+
+- `ThemeConfiguration` schema: `"default theme"` is now documented as reserved exclusively for the base theme (`id: "00000000000"`, `name: "None"`); all named themes must use `"custom theme"`
+- `id` and `name` field descriptions clarified to make the default/custom theme distinction unambiguous for LLM consumers
+
+## [1.1.4] - 2026-05-23
+
+### Fixed
+
+- Theme `id` description updated to explicitly reserve `"00000000000"` for the default base theme and require a random 11-character hex string for all named themes
+- Theme `name` description updated to explicitly reserve `"None"` for the default base theme
+
 ## [1.1.3] - 2026-05-14
 
 ### Changed
@@ -154,6 +168,8 @@ No substantive changes — version bump only.
 - `extract_dominant_colors` tool — extracts dominant colors from an image URL using k-means clustering
 - OAuth 2.0 proxy: `/.well-known/oauth-authorization-server` discovery and `/oauth/token` token exchange
 
+[1.1.5]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.4...v1.1.5
+[1.1.4]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.0...v1.1.1
