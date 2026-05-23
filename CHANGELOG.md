@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.6] - 2026-05-23
+
+### Fixed
+
+- `zColor` schema: `chroma` object field renamed from `chroma` to `shift` — now matches the API validation (`chroma.shift`) and is consistent with the `hue` object (`hue.shift`)
+
 ## [1.1.5] - 2026-05-23
 
 ### Fixed
@@ -168,6 +174,7 @@ No substantive changes — version bump only.
 - `extract_dominant_colors` tool — extracts dominant colors from an image URL using k-means clustering
 - OAuth 2.0 proxy: `/.well-known/oauth-authorization-server` discovery and `/oauth/token` token exchange
 
+[1.1.6]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.5...v1.1.6
 [1.1.5]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.2...v1.1.3
