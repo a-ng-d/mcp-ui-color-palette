@@ -135,9 +135,9 @@ export const zTheme = z.object({
     .string()
     .optional()
     .describe(
-      'Theme identifier — generate a random 11-character lowercase hex string (e.g. "9e3d5b0f12a"), use "00000000000" for the default theme if applicable',
+      'Theme identifier — use "00000000000" exclusively for the default base theme (name must be "None"). For any named theme (Light, Dark, Brand, etc.), generate a random 11-character lowercase hex string (e.g. "9e3d5b0f12a").',
     ),
-  name: z.string().min(1).describe('Theme name (e.g. "Light", "Dark"), use "None" if not applicable'),
+  name: z.string().min(1).describe('Theme name — use "None" exclusively for the default base theme (id "00000000000"). For named themes use descriptive names (e.g. "Light", "Dark").'),
   description: z.string().optional().describe('Theme description, use empty string if none'),
   scale: z
     .record(z.string(), z.number().min(0).max(100))
@@ -167,7 +167,7 @@ export const zTheme = z.object({
     .describe('Text colors used for contrast display — use {lightColor: "#FFFFFF", darkColor: "#000000"} by default'),
   paletteBackground: zHex.optional().describe('Hex background color for the palette canvas — use "#FFFFFF" by default'),
   isEnabled: z.boolean().optional().describe('Whether this theme is active — use true'),
-  type: z.enum(['default theme', 'custom theme']).optional().describe('Theme type — use "default theme" unless it is a custom override'),
+  type: z.enum(['default theme', 'custom theme']).optional().describe('Theme type — "default theme" is reserved exclusively for the base theme (id "00000000000", name "None"). All named themes (Light, Dark, Brand, etc.) must use "custom theme".'),
 })
 
 export const zSystemSchema = z.object({
