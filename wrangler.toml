@@ -14,7 +14,7 @@ tag = "v1"
 new_sqlite_classes = ["UICPMcp"]
 
 [vars]
-API_URL = "https://api-uicp.yelbolt.workers.dev"
+API_URL = "https://api.ui-color-palette.com"
 OAUTH_SERVER_URL = "https://zclweepgvqkrelyfwhma.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjbHdlZXBndnFrcmVseWZ3aG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDY3NDI0NjIsImV4cCI6MjAyMjMxODQ2Mn0.EqxJsGA3LcJEpBPUhMriiSDyaj6GeB5zjhchSWT6sgA"
 
