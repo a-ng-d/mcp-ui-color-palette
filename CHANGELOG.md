@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-29
+
+### Changed
+
+- **Breaking:** `hue.shift` and `chroma.shift` (on colors) and the global palette `shift.hue` / `shift.chroma` now take a shift curve object (`{ min, max, value, curve: 'LINEAR' | 'HYPERBOLA' | 'FREE' }`) instead of a plain `number`, matching the API and engine `ShiftCurveConfiguration`
+- New reusable schemas `zShiftCurve`, `zHueShift` and `zChromaShift`, with documented "no adjustment" values (hue neutral `0`, chroma neutral `100`)
+- `publish_palette` reuses the shared shift schemas instead of its own duplicated `number` definition, so its body is accepted by the updated API validation
+
 ## [1.1.7] - 2026-07-25
 
 ### Fixed
@@ -180,6 +188,7 @@ No substantive changes — version bump only.
 - `extract_dominant_colors` tool — extracts dominant colors from an image URL using k-means clustering
 - OAuth 2.0 proxy: `/.well-known/oauth-authorization-server` discovery and `/oauth/token` token exchange
 
+[1.2.0]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.7...v1.2.0
 [1.1.7]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.6...v1.1.7
 [1.1.6]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.5...v1.1.6
 [1.1.5]: https://github.com/a-ng-d/mcp-ui-color-palette/compare/v1.1.4...v1.1.5

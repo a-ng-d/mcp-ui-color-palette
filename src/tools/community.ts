@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { apiCall, requireAuth } from '../helpers'
-import { zPreset, zColor, zTheme } from '../schemas'
+import { zPreset, zColor, zTheme, zChromaShift, zHueShift } from '../schemas'
 
 export const registerCommunityTools = (server: McpServer, apiUrl: string, getToken: () => string | undefined): void => {
   server.registerTool(
@@ -77,10 +77,12 @@ export const registerCommunityTools = (server: McpServer, apiUrl: string, getTok
         preset: zPreset,
         shift: z
           .object({
-            chroma: z.number().describe('Global chroma/saturation shift applied to all colors'),
-            hue: z.number().describe('Global hue shift applied to all colors'),
+            chroma: zChromaShift.describe('Global chroma/saturation shift curve applied to all colors'),
+            hue: zHueShift.describe('Global hue shift curve applied to all colors'),
           })
-          .describe('Global shift adjustments (use {chroma: 0, hue: 0} for no shift)'),
+          .describe(
+            'Global shift adjustments (use {chroma: {min: 100, max: 100, value: 100, curve: "LINEAR"}, hue: {min: 0, max: 0, value: 0, curve: "LINEAR"}} for no shift)',
+          ),
         are_source_colors_locked: z.boolean().optional().describe('Whether source colors are locked (default: false)'),
         colors: z.array(zColor).min(1).describe('Source colors to generate shades from (at least one required)'),
         themes: z.array(zTheme).min(1).describe('Array of theme configurations (at least one required, e.g. a "Light" default theme)'),

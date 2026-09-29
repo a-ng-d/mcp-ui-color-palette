@@ -19,6 +19,30 @@ export const zRef = z
   .regex(/^[^:]+:[^:]+$/, 'Must be in the format "colorId:shadeName"')
   .describe('Primitive ref in the format "colorId:shadeName" (e.g. "blue:500")')
 
+export const zShiftCurve = z
+  .enum(['LINEAR', 'HYPERBOLA', 'FREE'])
+  .describe(
+    'Shift curve shape: LINEAR applies a flat "value" across every shade; HYPERBOLA and FREE vary the shift across the lightness scale, interpolating between "min" (darkest shade) and "max" (lightest shade)',
+  )
+
+export const zHueShift = z
+  .object({
+    min: z.number().min(-360).max(360).describe('Hue shift (degrees) applied at the darkest end of the scale'),
+    max: z.number().min(-360).max(360).describe('Hue shift (degrees) applied at the lightest end of the scale'),
+    value: z.number().min(-360).max(360).describe('Flat hue shift (degrees) used when curve is "LINEAR"'),
+    curve: zShiftCurve,
+  })
+  .describe('Hue shift curve (−360–360°) — use {min: 0, max: 0, value: 0, curve: "LINEAR"} for no adjustment')
+
+export const zChromaShift = z
+  .object({
+    min: z.number().min(0).max(200).describe('Chroma/saturation shift applied at the darkest end of the scale'),
+    max: z.number().min(0).max(200).describe('Chroma/saturation shift applied at the lightest end of the scale'),
+    value: z.number().min(0).max(200).describe('Flat chroma/saturation shift used when curve is "LINEAR"'),
+    curve: zShiftCurve,
+  })
+  .describe('Chroma/saturation shift curve (0–200) — use {min: 100, max: 100, value: 100, curve: "LINEAR"} for no adjustment')
+
 export const zPresetId = z.enum([
   'CUSTOM_1_10',
   'CUSTOM_10_100',
@@ -102,11 +126,15 @@ export const zColor = z.object({
   description: z.string().optional().describe('Optional description, use empty string if none'),
   rgb: zRgb,
   hue: z
-    .object({ shift: z.number().min(-360).max(360), isLocked: z.boolean() })
-    .describe('Hue shift in degrees (−360–360) — use {shift: 0, isLocked: false} for no adjustment'),
+    .object({ shift: zHueShift, isLocked: z.boolean() })
+    .describe(
+      'Hue shift config — use {shift: {min: 0, max: 0, value: 0, curve: "LINEAR"}, isLocked: false} for no adjustment',
+    ),
   chroma: z
-    .object({ shift: z.number().min(0).max(200), isLocked: z.boolean() })
-    .describe('Chroma/saturation shift (0–200) — use {shift: 100, isLocked: false} for no adjustment'),
+    .object({ shift: zChromaShift, isLocked: z.boolean() })
+    .describe(
+      'Chroma/saturation shift config — use {shift: {min: 100, max: 100, value: 100, curve: "LINEAR"}, isLocked: false} for no adjustment',
+    ),
   alpha: z
     .object({ isEnabled: z.boolean(), backgroundColor: zHex })
     .describe('Alpha config — use {isEnabled: false, backgroundColor: "#FFFFFF"} unless transparency is needed'),
@@ -118,18 +146,12 @@ export const zBase = z.object({
   preset: zPreset,
   shift: z
     .object({
-      chroma: z
-        .number()
-        .min(0)
-        .max(200)
-        .describe('Global chroma/saturation shift applied to all colors - Chroma/saturation shift (0–200) - use 100 for no shift'),
-      hue: z
-        .number()
-        .min(-360)
-        .max(360)
-        .describe('Global hue shift applied to all colors - Hue shift in degrees (−360–360) - use 0 for no shift'),
+      chroma: zChromaShift.describe('Global chroma/saturation shift curve applied to all colors'),
+      hue: zHueShift.describe('Global hue shift curve applied to all colors'),
     })
-    .describe('Global shift adjustments (use {chroma: 100, hue: 0} for no shift)'),
+    .describe(
+      'Global shift adjustments (use {chroma: {min: 100, max: 100, value: 100, curve: "LINEAR"}, hue: {min: 0, max: 0, value: 0, curve: "LINEAR"}} for no shift)',
+    ),
   areSourceColorsLocked: z.boolean().optional().describe('Whether source colors are locked (default: false)'),
   colors: z.array(zColor).min(1).describe('Source colors to generate shades from (at least one required)'),
   colorSpace: z
