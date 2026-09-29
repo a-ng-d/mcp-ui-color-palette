@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-09-29
+
+### Fixed
+
+- `/mcp` no longer surfaces the Cloudflare Error 1101 page when the Durable Object throws during startup or request handling: the exception is logged with `console.error` and a JSON-RPC `-32603` error is returned with HTTP 503 and `Retry-After: 5`, so MCP clients can retry
+
+### Changed
+
+- Workers Logs now sample 10% of requests (`head_sampling_rate = 0.1`) to stay under the daily observability events quota
+
 ## [1.2.0] - 2026-09-29
 
 ### Changed
