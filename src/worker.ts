@@ -130,7 +130,27 @@ export default {
       const ctxWithProps = Object.assign(Object.create(ctx as object), {
         props: token ? ({ accessToken: token } satisfies Props) : undefined,
       }) as ExecutionContext
-      return UICPMcp.serve('/mcp').fetch(request, env, ctxWithProps)
+      try {
+        return await UICPMcp.serve('/mcp').fetch(request, env, ctxWithProps)
+      } catch (error) {
+        console.error('MCP Durable Object failure', {
+          method: request.method,
+          hasSession: request.headers.has('mcp-session-id'),
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        })
+        return new Response(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            error: { code: -32603, message: 'Service temporarily unavailable, please retry.' },
+            id: null,
+          }),
+          {
+            status: 503,
+            headers: { 'Content-Type': 'application/json', 'Retry-After': '5' },
+          },
+        )
+      }
     }
 
     return new Response('Not found', { status: 404 })

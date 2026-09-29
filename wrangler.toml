@@ -22,3 +22,4 @@ SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 [observability.logs]
 enabled = true
 invocation_logs = true
+head_sampling_rate = 0.1
