@@ -4,14 +4,13 @@ compatibility_date = "2025-03-10"
 workers_dev = true
 compatibility_flags = ["nodejs_compat"]
 
-[durable_objects]
-bindings = [
-  { name = "MCP_OBJECT", class_name = "UICPMcp" }
-]
-
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["UICPMcp"]
+
+[[migrations]]
+tag = "v2"
+deleted_classes = ["UICPMcp"]
 
 [vars]
 API_URL = "https://api.ui-color-palette.com"

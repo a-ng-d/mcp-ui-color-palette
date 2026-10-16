@@ -1,52 +1,35 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { McpAgent } from 'agents/mcp'
-import type { Env, Props } from './types'
+import { createMcpHandler } from 'agents/mcp'
+import type { Env } from './types'
 import { registerPaletteTools } from './tools/palette'
 import { registerCommunityTools } from './tools/community'
 
-// ─── MCP Agent ────────────────────────────────────────────────────────────────
+// ─── MCP Server (stateless) ───────────────────────────────────────────────────
 
-export class UICPMcp extends McpAgent<Env, unknown, Props> {
-  server = new McpServer({
+const createServer = (env: Env, token: string | undefined): McpServer => {
+  const server = new McpServer({
     name: 'ui-color-palette',
     version: '1.0.0',
   })
+  registerPaletteTools(server, env.API_URL)
+  registerCommunityTools(server, env.API_URL, () => token)
+  return server
+}
 
-  private _accessToken?: string
+// ─── Dynamic Client Registration de-duplication ───────────────────────────────
 
-  async setName(name: string, props?: Record<string, unknown>) {
-    const token = (props as Props | undefined)?.accessToken
-    if (token) {
-      this._accessToken = token
-      await this.ctx.storage.put('accessToken', token)
-    }
-    return super.setName(name, props)
-  }
+const DCR_CACHE_TTL_SECONDS = 60 * 60 * 24
 
-  async onStart(props?: Props) {
-    if (props?.accessToken) {
-      this._accessToken = props.accessToken
-      await this.ctx.storage.put('accessToken', props.accessToken)
-    } else {
-      this._accessToken = (await this.ctx.storage.get<string>('accessToken')) ?? undefined
-    }
-    await super.onStart(props)
-  }
-
-  async onConnect(conn: unknown, connCtx: { request: Request }) {
-    const authHeader = connCtx.request.headers.get('Authorization')
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
-    if (token) {
-      this._accessToken = token
-      await this.ctx.storage.put('accessToken', token)
-    }
-    return super.onConnect(conn as never, connCtx)
-  }
-
-  async init() {
-    registerPaletteTools(this.server, this.env.API_URL)
-    registerCommunityTools(this.server, this.env.API_URL, () => this._accessToken)
-  }
+const hashRegistration = async (body: Record<string, unknown>): Promise<string> => {
+  const normalized = JSON.stringify({
+    client_name: body.client_name ?? null,
+    redirect_uris: Array.isArray(body.redirect_uris) ? [...(body.redirect_uris as string[])].sort() : null,
+    grant_types: Array.isArray(body.grant_types) ? [...(body.grant_types as string[])].sort() : null,
+    response_types: Array.isArray(body.response_types) ? [...(body.response_types as string[])].sort() : null,
+    scope: body.scope ?? null,
+  })
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalized))
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 // ─── Worker Entry Point ───────────────────────────────────────────────────────
@@ -76,6 +59,11 @@ export default {
       }
       regBody.token_endpoint_auth_method = 'none'
 
+      const cache = (caches as unknown as { default: Cache }).default
+      const cacheKey = new Request(`${url.origin}/__dcr/${await hashRegistration(regBody)}`)
+      const cached = await cache.match(cacheKey)
+      if (cached) return cached
+
       const supabaseRes = await fetch(`${env.OAUTH_SERVER_URL}/auth/v1/oauth/clients/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: env.SUPABASE_ANON_KEY },
@@ -83,6 +71,21 @@ export default {
       })
 
       const responseText = await supabaseRes.text()
+
+      if (supabaseRes.ok) {
+        ctx.waitUntil(
+          cache.put(
+            cacheKey,
+            new Response(responseText, {
+              status: supabaseRes.status,
+              headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': `public, max-age=${DCR_CACHE_TTL_SECONDS}`,
+              },
+            }),
+          ),
+        )
+      }
 
       return new Response(responseText, {
         status: supabaseRes.status,
@@ -127,15 +130,15 @@ export default {
       const authHeader = request.headers.get('Authorization')
       const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
 
-      const ctxWithProps = Object.assign(Object.create(ctx as object), {
-        props: token ? ({ accessToken: token } satisfies Props) : undefined,
-      }) as ExecutionContext
       try {
-        return await UICPMcp.serve('/mcp').fetch(request, env, ctxWithProps)
+        const handler = createMcpHandler(createServer(env, token), {
+          route: '/mcp',
+          enableJsonResponse: true,
+        })
+        return await handler(request, env, ctx)
       } catch (error) {
-        console.error('MCP Durable Object failure', {
+        console.error('MCP request failure', {
           method: request.method,
-          hasSession: request.headers.has('mcp-session-id'),
           message: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
         })

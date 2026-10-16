@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-10-16
+
+### Fixed
+
+- `/mcp` no longer returns 503 once the Durable Objects free-tier daily quota ("Exceeded allowed rows written") is hit: the server is now stateless (`createMcpHandler`, one `McpServer` per request, Bearer token passed to the tools through a closure) and no longer uses a Durable Object, so no SQLite rows are written per request or per session
+- `/oauth/register` de-duplicates Dynamic Client Registration: identical registration requests (same `client_name`, `redirect_uris`, grant/response types and scope) reuse the cached Supabase response for 24h instead of creating a new "Claude" OAuth client on every connection attempt (Cache API, effective on the custom domain only — not on `workers.dev`)
+
+### Removed
+
+- `UICPMcp` Durable Object class and `MCP_OBJECT` binding; migration `v2` (`deleted_classes`) wipes the accumulated `streamable-http:*` instances and their storage
+
 ## [1.2.1] - 2026-09-29
 
 ### Fixed
